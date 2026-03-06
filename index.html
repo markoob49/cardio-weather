@@ -1687,6 +1687,8 @@ function renderWeather() {
       <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°' : '—'}</div><div class="wc-lbl">Темп.</div></div>
       <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
       <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">мм рт.ст.</div></div>
+      <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
+    </div>`;
   } else if (wm) wm.innerHTML = `<div class="xs dim">${T('l-loading')}</div>`;
   const rv = cardioRisk(w);
   drawGauge(rv);
