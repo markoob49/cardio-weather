@@ -1639,6 +1639,8 @@ function hamsinDetect(w) {
   return s >= 3;
 }
 
+function hpaToMmhg(hpa) { return hpa ? Math.round(hpa * 0.75006) : null; }
+
 function cardioRisk(w) {
   if (!w) return null;
   const t = w.temp ?? 20, pm = w.pm25 ?? 0, pm10 = w.pm10 ?? 0;
@@ -1684,9 +1686,7 @@ function renderWeather() {
     wm.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">
       <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°' : '—'}</div><div class="wc-lbl">Темп.</div></div>
       <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
-      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${w.pres ? Math.round(w.pres) : '—'}</div><div class="wc-lbl">hPa</div></div>
-      <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
-    </div>`;
+      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">мм рт.ст.</div></div>
   } else if (wm) wm.innerHTML = `<div class="xs dim">${T('l-loading')}</div>`;
   const rv = cardioRisk(w);
   drawGauge(rv);
@@ -1722,12 +1722,12 @@ function openWeatherDetail() {
     <div class="wg mb3">
       <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°C' : '—'}</div><div class="wc-lbl">Темп.</div></div>
       <div class="wc"><div class="wc-icon">💧</div><div class="wc-val">${w.hum ? w.hum + '%' : '—'}</div><div class="wc-lbl">Влажн.</div></div>
-      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${w.pres ? Math.round(w.pres) : '—'}</div><div class="wc-lbl">hPa</div></div>
+      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">мм рт.ст.</div></div>
       <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
       <div class="wc"><div class="wc-icon">🏜️</div><div class="wc-val">${w.pm10 ? Math.round(w.pm10) : '—'}</div><div class="wc-lbl">PM10</div></div>
       <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
     </div>
-    <div class="rrow"><span class="rk">Перепад давления (12ч)</span><span class="rv">${w.dpres ? (w.dpres > 0 ? '+' : '') + w.dpres.toFixed(1) + ' hPa' : '—'}</span></div>
+    <div class="rrow"><span class="rk">Перепад давления (12ч)</span><span class="rv">${w.dpres ? (w.dpres > 0 ? '+' : '') + Math.round(w.dpres * 0.75006 * 10) / 10 + ' мм рт.ст.' : '—'}</span></div>
     <div class="rrow"><span class="rk">Хамсин-флаг</span><span class="rv">${w.hamsin ? '🌪️ Да' : '—'}</span></div>
     <div class="rrow"><span class="rk">cardioRiskIndex</span><span class="rv mono">${rv != null ? rv + '%' : '—'}</span></div>
     <div class="xs dim mt2">Open-Meteo · NOAA SWPC · ${w.ts ? new Date(w.ts).toLocaleTimeString() : '—'}</div>
