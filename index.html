@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="ru" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d1117">
+<title>КардиоПогода ❤️‍🩺</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:         #f5f0eb;
+    --surface:    #fdfaf7;
+    --surface2:   #f0ebe4;
+    --border:     #e0d8cf;
+    --border2:    #ccc4bb;
+    --text:       #3a3028;
+    --muted:      #8a7e74;
+    --dim:        #b8aea4;
+    --accent:     #7a8fa6;
+    --accent-glow:rgba(122,143,166,.12);
+    --low:        #5a8a6a;
+    --low-glow:   rgba(90,138,106,.12);
+    --mod:        #b07840;
+    --mod-glow:   rgba(176,120,64,.12);
+    --high:       #a05868;
+    --high-glow:  rgba(160,88,104,.12);
+    --teal:       #7a8fa6;
+    --teal2:      #6a7f96;
+    --teal-dim:   rgba(122,143,166,.12);
+    --teal-glow:  rgba(122,143,166,.2);
+    --green:      #5a8a6a;
+    --green-dim:  rgba(90,138,106,.12);
+    --red:        #a05868;
+    --red-dim:    rgba(160,88,104,.12);
+    --orange:     #b07840;
+    --orange-dim: rgba(176,120,64,.12);
+    --white:      #fdfaf7;
+    --r:          8px;
+    --r2:         12px;
+    --r3:         16px;
+    --shadow:     0 4px 20px rgba(58,48,40,.10);
+    --shadow-sm:  0 1px 6px rgba(58,48,40,.08);
+    --font:       'JetBrains Mono', monospace;
+    --mono:       'JetBrains Mono', monospace;
+    --serif:      'Spectral', serif;
+    --t:          .2s ease;
+  }
+
+  [dir="rtl"] { --font: 'JetBrains Mono', monospace; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 15% 0%, rgba(186,174,210,.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 100%, rgba(122,166,148,.10) 0%, transparent 50%);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  #app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+  #hdr {
+    background: rgba(245,240,235,.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; z-index: 10; position: sticky; top: 0;
+  }
+  #hdr-title {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: .95rem; letter-spacing: .02em; color: var(--accent);
+  }
+  #hdr-title em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: .7rem; font-weight: 300; margin-left: 8px; }
+  #hdr-right { display: flex; align-items: center; gap: 8px; }
+
+  #weather-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 10px; font-size: .7rem; cursor: pointer; transition: var(--t);
+    font-family: var(--mono); letter-spacing: .03em;
+  }
+  #weather-pill:hover { border-color: var(--accent); }
+  #hdr-temp { color: var(--mod); font-weight: 600; }
+  #hdr-pm { color: var(--muted); font-size: .65rem; }
+
+  #lang-toggle {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 4px; padding: 4px 10px; font-size: .7rem; font-weight: 400;
+    cursor: pointer; font-family: var(--mono); transition: var(--t); letter-spacing: .05em;
+  }
+  #lang-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  #scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 68px; }
+
+  #nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+    background: rgba(245,240,235,.95); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    display: flex; padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .nb {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 8px 2px 6px; gap: 3px; cursor: pointer;
+    border: none; background: none; color: var(--dim); font-size: .6rem; font-weight: 400;
+    font-family: var(--mono); transition: color var(--t); position: relative;
+    letter-spacing: .04em;
+  }
+  .nb svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .nb.on { color: var(--accent); }
+  .nb.on::before {
+    content: ''; position: absolute; top: 0; left: 25%; right: 25%;
+    height: 1px; background: var(--accent);
+  }
+  .nb:active { opacity: .7; }
+
+  .tab { display: none; padding: 20px 18px; }
+  .tab.on { display: block; animation: fadeUp .2s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+  .s-hdr { display: flex; align-items: center; gap: 12px; margin: 20px 0 10px; }
+  .s-title {
+    font-size: .6rem; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+  }
+  .s-line { flex: 1; height: 1px; background: var(--border); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r2); padding: 20px; margin-bottom: 12px; position: relative;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(122,143,166,.3), transparent);
+  }
+  .card-sm { padding: 12px 14px; border-radius: var(--r); }
+  .c-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .c-title {
+    font-size: .6rem; font-weight: 400; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .12em;
+  }
+  .c-val { font-size: .72rem; color: var(--accent); }
+
+  .bp-big { display: flex; align-items: baseline; gap: 3px; line-height: 1; font-family: var(--mono); }
+  .bp-sys { font-size: 3.5rem; font-weight: 300; color: var(--text); transition: color .5s; }
+  .bp-slash { font-size: 1.8rem; color: var(--dim); margin: 0 4px; font-weight: 300; }
+  .bp-dia { font-size: 2.4rem; font-weight: 300; color: var(--text); }
+  .bp-unit { font-size: .7rem; color: var(--muted); align-self: flex-end; margin-bottom: 6px; margin-left: 4px; }
+
+  .spill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 6px; font-size: .75rem; font-weight: 600;
+    letter-spacing: .06em; border: 1px solid; margin-top: 6px; transition: all .5s;
+  }
+  .sp-ok  { background: var(--low-glow);  border-color: var(--low);    color: var(--low); }
+  .sp-el  { background: var(--mod-glow);  border-color: var(--mod);    color: var(--mod); }
+  .sp-h1  { background: var(--mod-glow);  border-color: var(--mod);    color: var(--mod); }
+  .sp-h2  { background: var(--high-glow); border-color: var(--high);   color: var(--high); }
+  .sp-cr  { background: var(--high-glow); border-color: var(--high);   color: var(--high); animation: pulse 1s ease infinite; }
+  .sp-lo  { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  .risk-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+
+  .gauge-num { font-size: 1.6rem; font-weight: 300; font-family: var(--mono); color: var(--text); text-align: center; margin-top: 4px; }
+  .gauge-label { font-size: .65rem; color: var(--muted); text-align: center; margin-top: 2px; }
+
+  .wg { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .wc {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 12px 10px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .wc-icon { font-size: .9rem; }
+  .wc-val { font-size: 1.3rem; font-weight: 300; color: var(--text); font-family: var(--mono); }
+  .wc-lbl { font-size: .58rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+
+  .hamsin {
+    background: rgba(160,88,104,.07); border: 1px solid rgba(160,88,104,.3);
+    border-radius: var(--r); padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
+  }
+  .hamsin-icon { font-size: 1.2rem; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+  .hamsin strong { font-size: .75rem; color: var(--high); display: block; font-weight: 600; }
+  .hamsin span { font-size: .68rem; color: var(--muted); line-height: 1.5; }
+
+  .abanner { border-radius: var(--r); padding: 10px 14px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; border: 1px solid; }
+  .ab-danger  { background: var(--high-glow); border-color: rgba(160,88,104,.4); }
+  .ab-warning { background: var(--mod-glow);  border-color: rgba(176,120,64,.4); }
+  .ab-info    { background: var(--accent-glow); border-color: rgba(122,143,166,.4); }
+  .ab-icon { font-size: .9rem; flex-shrink: 0; margin-top: 2px; }
+  .ab strong { font-size: .72rem; font-weight: 600; color: var(--text); display: block; }
+  .ab p { font-size: .66rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+  .flabel {
+    font-size: .6rem; font-weight: 400; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; display: block;
+  }
+  .flabel em { text-transform: none; letter-spacing: 0; font-style: italic; color: var(--dim); margin-left: 5px; font-size: .58rem; }
+  .fi {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r);
+    color: var(--text); padding: 8px 12px; font-size: .75rem; font-family: var(--mono);
+    transition: border-color var(--t); outline: none;
+  }
+  .fi:focus { border-color: var(--accent); }
+  .fi::placeholder { color: var(--dim); }
+
+  .fi-big {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r);
+    color: var(--text); text-align: center; padding: 10px 6px;
+    font-size: 2.2rem; font-weight: 300; font-family: var(--mono);
+    transition: border-color var(--t); outline: none;
+  }
+  .fi-big:focus { border-color: var(--accent); }
+  .fi-sub { text-align: center; font-size: .58rem; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-top: 3px; }
+
+  .nrs-wrap { position: relative; padding: 2px 0; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct,0%), var(--border) var(--pct,0%), var(--border) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--accent-glow); cursor: pointer;
+  }
+  .nrs-labs { display: flex; justify-content: space-between; font-size: .58rem; color: var(--dim); margin-top: 4px; letter-spacing: .04em; }
+  .nrs-val { text-align: center; font-size: 1.3rem; font-weight: 300; font-family: var(--mono); color: var(--text); margin: 3px 0; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .chip {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 10px; font-size: .68rem; cursor: pointer; font-family: var(--mono);
+    transition: var(--t); color: var(--muted); user-select: none;
+  }
+  .chip:active { transform: scale(.97); }
+  .chip.on { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+  .chip-cat {
+    font-size: .58rem; font-weight: 400; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--dim); display: block; margin-top: 12px; margin-bottom: 4px;
+  }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 6px; padding: 9px 18px;
+    font-size: .72rem; font-weight: 400; cursor: pointer; font-family: var(--mono);
+    width: 100%; transition: var(--t); letter-spacing: .06em;
+    border: 1px solid;
+  }
+  .btn:active { opacity: .8; }
+  .btn-p { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+  .btn-p:hover { background: rgba(122,143,166,.22); }
+  .btn-s { background: var(--surface2); border-color: var(--border); color: var(--muted); }
+  .btn-s:hover { border-color: var(--muted); color: var(--text); }
+  .btn-d { background: var(--high-glow); border-color: rgba(160,88,104,.4); color: var(--high); }
+  .btn-sm { padding: 6px 12px; font-size: .65rem; width: auto; border-radius: 4px; }
+
+  .tog { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .tog input { opacity: 0; width: 0; height: 0; }
+  .tslider { position: absolute; cursor: pointer; inset: 0; background: var(--border2); border-radius: 10px; transition: var(--t); }
+  .tslider::before { content:''; position:absolute; width:14px; height:14px; left:3px; bottom:3px; background:var(--surface); border-radius:50%; transition:var(--t); }
+  .tog input:checked + .tslider { background: var(--accent); }
+  .tog input:checked + .tslider::before { transform: translateX(16px); }
+  .tog-row { display: flex; align-items: center; gap: 10px; }
+
+  .rec {
+    background: var(--surface2); border-radius: 6px; padding: 9px 12px; margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid var(--border); border-left: 3px solid var(--border);
+    animation: slideIn .25s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+  .rec.ok { border-left-color: var(--low); }
+  .rec.el { border-left-color: var(--mod); }
+  .rec.h1 { border-left-color: var(--mod); }
+  .rec.cr { border-left-color: var(--high); }
+  .rec-bp { font-family: var(--mono); font-size: .9rem; font-weight: 300; color: var(--text); }
+  .rec-meta { font-size: .62rem; color: var(--muted); margin-top: 2px; }
+  .rec-time { font-size: .65rem; font-weight: 400; text-align: right; color: var(--muted); }
+  .rec-pp { font-size: .6rem; color: var(--dim); text-align: right; }
+
+  .sgg { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .sg {
+    background: var(--surface2); border-radius: var(--r); padding: 10px 8px;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .sg-val { font-size: 1.3rem; font-weight: 300; font-family: var(--mono); color: var(--text); }
+  .sg-lbl { font-size: .58rem; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+
+  .ci {
+    display: grid; grid-template-columns: 1fr 120px 50px;
+    align-items: center; gap: 10px; margin-bottom: 10px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--bg);
+  }
+  .ci:last-child { border-bottom: none; margin-bottom: 0; }
+  .ci-lbl { font-size: .68rem; color: var(--muted); line-height: 1.3; }
+  .ci-lbl small { display: block; font-size: .58rem; color: var(--dim); margin-top: 2px; }
+  .ci-bar { position: relative; height: 18px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .ci-bar::after { content:''; position:absolute; left:50%; top:0; width:1px; height:100%; background:var(--border); }
+  .ci-fill {
+    position: absolute; height: 100%; border-radius: 3px; opacity: .85; transition: width .6s ease, left .6s ease;
+  }
+  .ci-fill.pos { left: 50%; background: var(--low); }
+  .ci-fill.neg { right: 50%; background: var(--high); }
+  .ci-fill.insig { opacity: .3; filter: saturate(.3); }
+  .ci-num { font-family: var(--mono); font-size: .7rem; font-weight: 600; text-align: right; }
+
+  .rrow { display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--surface2); }
+  .rrow:last-child { border-bottom:none; }
+  .rk { font-size:.68rem; color:var(--muted); }
+  .rv { font-size:.75rem; font-weight:600; font-family:var(--mono); }
+  .rsection { margin-bottom:16px; }
+
+  /* ══ ONBOARDING ══ */
+  #onb { position:fixed; inset:0; z-index:500; display:flex; flex-direction:column; background:var(--bg); overflow-y:auto; }
+  .onb-hero {
+    padding: 48px 20px 32px; text-align: center;
+    background: radial-gradient(ellipse at 50% 0%, rgba(186,174,210,.2) 0%, transparent 65%);
+  }
+  .onb-logo { font-size: 3rem; margin-bottom: 12px; }
+  .onb-t {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 1.6rem; color: var(--accent); letter-spacing: .02em;
+  }
+  .onb-s { font-size: .68rem; color: var(--muted); margin-top: 6px; letter-spacing: .04em; }
+  .onb-body { flex:1; padding:20px 18px; max-width:480px; margin:0 auto; width:100%; }
+  .onb-step { display:none; }
+  .onb-step.on { display:block; }
+  .step-t { font-family:var(--serif); font-size:1.1rem; font-weight:300; color:var(--text); margin-bottom:5px; }
+  .step-s { font-size:.7rem; color:var(--muted); margin-bottom:18px; line-height:1.6; }
+  .onb-foot { padding:12px 18px max(32px, env(safe-area-inset-bottom)); max-width:480px; margin:0 auto; width:100%; position:sticky; bottom:0; background:var(--bg); border-top:1px solid var(--border); }
+  .prog { display:flex; gap:4px; margin-bottom:12px; }
+  .pdot { flex:1; height:2px; border-radius:1px; background:var(--border); transition:background var(--t); }
+  .pdot.done { background: var(--accent); opacity: .5; }
+  .pdot.cur  { background: var(--accent); }
+
+  .dg { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .dc {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--r2);
+    padding:14px 12px; cursor:pointer; transition:var(--t); text-align:center; user-select:none;
+  }
+  .dc .di { font-size:1.5rem; margin-bottom:6px; pointer-events:none; }
+  .dc .dn { font-size:.72rem; font-weight:600; color:var(--text); pointer-events:none; }
+  .dc .dd { font-size:.62rem; color:var(--muted); margin-top:3px; line-height:1.4; pointer-events:none; }
+  .dc.on { border-color:var(--accent); background:rgba(122,143,166,.2); box-shadow:inset 0 0 0 1px var(--accent); }
+  .dc.on .dn { color:var(--accent); }
+  .dc:active { transform:scale(.97); }
+
+  .mo { position:fixed; inset:0; background:rgba(58,48,40,.4); backdrop-filter:blur(4px); z-index:100; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .mo.on { opacity:1; pointer-events:all; }
+  .ms {
+    background:var(--surface); border-radius:var(--r3) var(--r3) 0 0; width:100%;
+    max-height:88vh; overflow-y:auto; padding:18px;
+    transform:translateY(100%); transition:transform .3s ease; border-top:1px solid var(--border);
+  }
+  .mo.on .ms { transform:translateY(0); }
+  .mhandle { width:32px; height:3px; background:var(--border2); border-radius:2px; margin:0 auto 14px; }
+  .mtitle { font-family:var(--serif); font-size:1rem; font-weight:300; color:var(--text); margin-bottom:14px; }
+
+  #emo { position:fixed; inset:0; background:rgba(58,48,40,.7); backdrop-filter:blur(4px); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity .2s; }
+  #emo.on { opacity:1; pointer-events:all; }
+  .ebox {
+    background:var(--surface); border:1px solid rgba(160,88,104,.5);
+    border-radius:var(--r2); padding:24px; max-width:360px; width:100%; text-align:center;
+    box-shadow:0 8px 32px rgba(160,88,104,.15);
+  }
+  .eicon { font-size:3rem; margin-bottom:10px; animation:shake .6s ease; }
+  @keyframes shake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-6deg)} 75%{transform:rotate(6deg)} }
+  .etitle { font-size:1rem; font-weight:600; color:var(--high); margin-bottom:8px; font-family:var(--serif); }
+  .esub { font-size:.72rem; color:var(--muted); margin-bottom:14px; line-height:1.6; }
+  .schklist { text-align:left; margin-bottom:14px; }
+  .schi { display:flex; align-items:center; gap:8px; padding:4px 0; cursor:pointer; font-size:.72rem; color:var(--text); }
+  .schi input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:var(--high); }
+
+  .ch-wrap { position:relative; }
+  .ch-wrap canvas { width:100% !important; }
+
+  .empty { text-align:center; padding:28px 16px; }
+  .empty-icon { font-size:2rem; opacity:.4; margin-bottom:8px; }
+  .empty p { color:var(--muted); font-size:.72rem; line-height:1.6; font-style:italic; font-family:var(--serif); }
+
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; font-size:.65rem; font-weight:600; border:1px solid; }
+  .b-g { background:var(--low-glow); border-color:rgba(90,138,106,.4); color:var(--low); }
+  .b-y { background:var(--mod-glow); border-color:rgba(176,120,64,.4); color:var(--mod); }
+  .b-o { background:var(--mod-glow); border-color:rgba(176,120,64,.4); color:var(--mod); }
+  .b-r { background:var(--high-glow); border-color:rgba(160,88,104,.4); color:var(--high); }
+  .b-t { background:var(--accent-glow); border-color:rgba(122,143,166,.4); color:var(--accent); }
+  .b-d { background:var(--accent-glow); border-color:rgba(122,143,166,.4); color:var(--accent); }
+
+  .ev { font-size:.58rem; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .ev-g { background:var(--low-glow); color:var(--low); }
+  .ev-y { background:var(--mod-glow); color:var(--mod); }
+  .ev-b { background:var(--accent-glow); color:var(--accent); }
+
+  .mt1{margin-top:4px} .mt2{margin-top:8px} .mt3{margin-top:14px}
+  .mb1{margin-bottom:4px} .mb2{margin-bottom:8px} .mb3{margin-bottom:14px}
+  .flex{display:flex} .ia{align-items:center} .jb{justify-content:space-between} .g2{gap:8px} .g3{gap:12px}
+  .f1{flex:1} .w100{width:100%}
+  .dim{color:var(--dim)} .teal{color:var(--accent)} .white{color:var(--text)}
+  .sm{font-size:.72rem} .xs{font-size:.65rem} .bold{font-weight:600} .mono{font-family:var(--mono)}
+  .hidden{display:none!important}
+
+  .srow { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--surface2); }
+  .srow:last-child { border-bottom:none; }
+  .srow-l .sl { font-size:.75rem; color:var(--text); }
+  .srow-l .sd { font-size:.62rem; color:var(--muted); margin-top:2px; }
+
+  @media (max-width:360px) { .dg{grid-template-columns:1fr} .bp-sys{font-size:2.8rem} .bp-dia{font-size:1.9rem} }
+  @keyframes shakeX{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ONBOARDING -->
+<div id="onb" style="display:flex">
+  <div class="onb-hero">
+    <div class="onb-logo">❤️‍🩺</div>
+    <div class="onb-t">Кардио<em>Погода</em></div>
+    <div class="onb-s" id="o-sub">Мониторинг АД с погодной аналитикой • ניטור ל"ד עם מזג אוויר</div>
+  </div>
+  <div class="onb-body">
+
+    <!-- Step 1: Diagnosis -->
+    <div class="onb-step on" id="os1">
+      <div class="step-t" id="o-t1">Ваш профиль</div>
+      <div class="step-s" id="o-s1">Выберите одну или несколько групп — это настроит пороги и аналитику</div>
+      <div class="dg" id="diag-grid">
+        <div class="dc" data-d="htn" onclick="togD(this)"><div class="di">🫀</div><div class="dn" id="d-htn">Гипертензия</div><div class="dd" id="d-htn-d">Повышенное АД, приём препаратов</div></div>
+        <div class="dc" data-d="pots" onclick="togD(this)"><div class="di">⚡</div><div class="dn">POTS</div><div class="dd" id="d-pots-d">Ортостатическая тахикардия, дисавтономия</div></div>
+        <div class="dc" data-d="meta" onclick="togD(this)"><div class="di">⚖️</div><div class="dn" id="d-meta">Метаб. синдром</div><div class="dd" id="d-meta-d">Диабет, ожирение, дислипидемия</div></div>
+        <div class="dc" data-d="elder" onclick="togD(this)"><div class="di">🌿</div><div class="dn" id="d-elder">Пожилой возраст</div><div class="dd" id="d-elder-d">Изолированная систолическая гипертензия</div></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Target BP -->
+    <div class="onb-step" id="os2">
+      <div class="step-t" id="o-t2">Целевые значения АД</div>
+      <div class="step-s" id="o-s2">Укажите цифры от вашего врача. Если не знаете — оставьте по умолчанию (ESH 2023).</div>
+      <div class="card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label class="flabel" id="l-tsys">Систолическое цель</label>
+            <input type="number" id="tsys" class="fi" value="130" min="100" max="160" placeholder="130">
+          </div>
+          <div>
+            <label class="flabel" id="l-tdia">Диастолическое цель</label>
+            <input type="number" id="tdia" class="fi" value="80" min="60" max="100" placeholder="80">
+          </div>
+        </div>
+        <div class="xs dim mt1" id="l-esh-hint">ESH 2023 цель: &lt;130/80; HBPM порог АГ: ≥135/85</div>
+        <div style="margin-top:14px">
+          <label class="flabel">SpO₂ <em id="l-baseline">ваша норма</em></label>
+          <div class="flex ia g2">
+            <input type="number" id="bspo2" class="fi" value="97" min="88" max="100" placeholder="97" style="max-width:90px;font-size:18px;font-weight:800">
+            <span class="dim">%</span>
+            <span class="xs dim" id="l-spo2hint">Для отслеживания снижения ≥3%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Medications -->
+    <div class="onb-step" id="os3">
+      <div class="step-t" id="o-t3">Текущие препараты</div>
+      <div class="step-s" id="o-s3">Опционально. Отображается в отчёте для врача.</div>
+      <div class="card">
+        <div id="meds-wrap"></div>
+        <button class="btn btn-s btn-sm mt2" onclick="addMed()">＋ <span id="l-addmed">Добавить препарат</span></button>
+      </div>
+      <div class="card card-sm mt2">
+        <div class="tog-row">
+          <label class="tog"><input type="checkbox" id="o-before" checked><span class="tslider"></span></label>
+          <div><div class="sm bold white" id="l-before">Измерения до лекарств утром</div><div class="xs dim mt1" id="l-before-h">Рекомендуется ESH 2023</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Location -->
+    <div class="onb-step" id="os4">
+      <div class="step-t" id="o-t4">Погодные данные</div>
+      <div class="step-s" id="o-s4">Приложение собирает температуру, PM2.5, PM10, давление и Kp-индекс для вашего района.</div>
+      <div class="card">
+        <div class="flex ia g3 mb3">
+          <span style="font-size:24px">🌍</span>
+          <div>
+            <div class="bold" style="color:var(--text);font-size:.75rem" id="l-auto">Автоматическое определение</div>
+            <div class="xs dim mt1">Open-Meteo · NOAA SWPC · Nominatim · бесплатно</div>
+          </div>
+        </div>
+        <div id="loc-status" class="abanner ab-info mb3">
+          <span class="ab-icon">📍</span>
+          <div class="ab"><strong id="l-loc-need">Нужна геолокация</strong><p id="l-loc-sub">Определим ваш город и высоту над уровнем моря</p></div>
+        </div>
+        <!-- City search autocomplete -->
+        <div style="position:relative;margin-bottom:10px">
+          <input type="text" id="city-search-input" class="fi" placeholder="🔍 Введите город..." oninput="onCityInput(this.value)" onfocus="clearGeoErrors()" autocomplete="off" style="font-size:.8rem">
+          <div id="city-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:100;max-height:200px;overflow-y:auto"></div>
+        </div>
+        <button class="btn btn-s" id="loc-btn" onclick="reqLoc()" style="font-size:.72rem;padding:8px 14px">
+          📍 <span id="l-allow">Определить по GPS</span>
+        </button>
+        <div id="geo-det-status" class="xs dim mt2 hidden"></div>
+      </div>
+      <div class="card card-sm">
+        <div class="flex ia g2 mb1"><span>🌪️</span><div class="sm bold" style="color:var(--text)" id="l-hamsin">Хамсин-детектор</div></div>
+        <p class="xs dim" id="l-hamsin-d">Автоматически определяет опасные дни и предупреждает об усиленном мониторинге</p>
+      </div>
+    </div>
+
+    <!-- Step 5: Done -->
+    <div class="onb-step" id="os5">
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:60px;margin-bottom:14px">✅</div>
+        <div class="step-t" id="o-t5">Всё готово!</div>
+        <div class="step-s" id="o-s5">Начните с первого измерения. Персональная аналитика появится после 30+ записей.</div>
+        <div id="os5-location" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-glow);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:.72rem;color:var(--muted);margin-top:8px"></div>
+        <div class="card mt3" style="text-align:left">
+          <div class="xs dim mb2" id="l-steps">Первые шаги:</div>
+          <div class="flex ia g2 mb2"><span>1️⃣</span><span class="sm" id="l-st1">Утром, до лекарств — измерьте АД дважды</span></div>
+          <div class="flex ia g2 mb2"><span>2️⃣</span><span class="sm" id="l-st2">Отметьте триггер измерения</span></div>
+          <div class="flex ia g2"><span>3️⃣</span><span class="sm" id="l-st3">Вечером — повторите</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="onb-foot">
+    <div class="prog">
+      <div class="pdot cur" id="pd1"></div><div class="pdot" id="pd2"></div>
+      <div class="pdot" id="pd3"></div><div class="pdot" id="pd4"></div><div class="pdot" id="pd5"></div>
+    </div>
+    <div class="flex g2">
+      <button class="btn btn-s hidden" id="o-back" onclick="onbBack()" style="width:auto;padding:12px 18px"><span id="l-back">Назад</span></button>
+      <button class="btn btn-p" id="o-next" onclick="onbNext()"><span id="l-next">Далее →</span></button>
+    </div>
+  </div>
+</div><!-- /onb -->
+
+<!-- MAIN APP -->
+<div id="main" class="hidden" style="flex-direction:column;height:100dvh">
+  <div id="hdr">
+    <div id="hdr-title">❤️‍🩺 Кардио<em>Погода</em> <span id="hdr-city" style="font-family:var(--mono);font-style:normal;font-size:.65rem;color:var(--muted);font-weight:300;margin-left:6px"></span></div>
+    <div id="hdr-right">
+      <div id="weather-pill" onclick="openWeatherDetail()">
+        <span id="hdr-temp">—°</span>
+        <span id="hdr-pm">PM—</span>
+      </div>
+      <button id="loc-refresh" title="Изменить город" onclick="openCityModal()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:4px 8px;font-size:.75rem;cursor:pointer;transition:var(--t)" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">📍</button>
+      <button id="lang-toggle" onclick="cycleLang()">HE</button>
+    </div>
+  </div>
+
+  <div id="scroll">
+
+    <!-- TAB: HOME -->
+    <div id="t-home" class="tab on">
+      <div id="alerts-z"></div>
+      <div id="hamsin-z"></div>
+      <div class="card">
+        <div class="c-hdr">
+          <span class="c-title" id="l-last-reading">Последнее измерение</span>
+          <span class="xs dim" id="last-time">—</span>
+        </div>
+        <div id="no-data" class="empty">
+          <div class="empty-icon">📊</div>
+          <p id="l-no-data">Нет данных.<br>Добавьте первое измерение АД.</p>
+          <button class="btn btn-p btn-sm mt3" onclick="goTab('entry')" style="width:auto">+ <span id="l-add-first">Добавить</span></button>
+        </div>
+        <div id="bp-section" class="hidden">
+          <div class="bp-big">
+            <span class="bp-sys" id="last-sys">—</span>
+            <span class="bp-slash">/</span>
+            <span class="bp-dia" id="last-dia">—</span>
+            <span class="bp-unit">mmHg</span>
+          </div>
+          <div id="last-status" class="spill sp-ok">● —</div>
+          <div class="flex g2 mt2 xs dim">
+            <span>PP: <b class="mono teal" id="last-pp">—</b></span>
+            <span>•</span>
+            <span>ЧСС: <b class="mono" id="last-hr">—</b></span>
+            <span>•</span>
+            <span class="f1" id="last-trig-disp" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="card" style="text-align:center">
+          <div class="c-title mb2" id="l-risk">Кардио-риск</div>
+          <canvas id="gauge-c" width="120" height="70" style="width:120px;height:70px;margin:0 auto;display:block"></canvas>
+          <div class="gauge-num mt1" id="gauge-n" style="color:var(--green)">—</div>
+          <div class="gauge-label" id="gauge-l">—</div>
+        </div>
+        <div class="card">
+          <div class="c-hdr">
+            <span class="c-title" id="l-weather">Погода</span>
+            <span id="home-city-badge" class="xs dim" style="display:flex;align-items:center;gap:3px"></span>
+          </div>
+          <div id="weather-mini"><div class="xs dim" id="l-loading">Загрузка...</div></div>
+        </div>
+      </div>
+
+      <div id="surge-card" class="card hidden">
+        <div class="c-hdr">
+          <span class="c-title" id="l-surge">Утренний подъём</span>
+          <span class="badge" id="surge-badge">—</span>
+        </div>
+        <div class="flex ia g3">
+          <div class="f1">
+            <div class="mono bold white" id="surge-val" style="font-size:24px">—</div>
+            <div class="xs dim mt1" id="l-surge-h">утро − вечер (вчера)</div>
+          </div>
+          <div style="text-align:right">
+            <div class="xs dim" id="l-surge-avg">7-дн. ср.</div>
+            <div class="mono bold" id="surge-avg">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="spo2-dash" class="card hidden">
+        <div class="c-hdr">
+          <span class="c-title">SpO₂</span>
+          <span class="badge" id="spo2-badge">—</span>
+        </div>
+        <div class="flex ia g2">
+          <span class="mono bold white" id="spo2-val" style="font-size:30px">—</span>
+          <span class="dim">%</span>
+          <span class="xs dim" id="spo2-time">—</span>
+        </div>
+      </div>
+
+      <div id="trend-c" class="card hidden">
+        <div class="c-hdr">
+          <span class="c-title" id="l-trend">Тренд АД (7 дней)</span>
+          <span class="xs dim" id="trend-stats">—</span>
+        </div>
+        <div class="ch-wrap" style="height:130px"><canvas id="trend-chart"></canvas></div>
+      </div>
+
+      <div id="recent-z" class="hidden">
+        <div class="s-hdr"><div class="s-title" id="l-recent">Последние записи</div><div class="s-line"></div></div>
+        <div id="recent-list"></div>
+        <button class="btn btn-s btn-sm" onclick="goTab('analytics')" style="width:auto;margin-top:4px"><span id="l-see-all">Все записи →</span></button>
+      </div>
+    </div>
+
+    <!-- TAB: ENTRY -->
+    <div id="t-entry" class="tab">
+      <div class="card">
+        <div class="c-hdr">
+          <span class="c-title" id="l-bp-entry">Измерение АД</span>
+          <span class="xs dim" id="entry-time">—</span>
+        </div>
+        <div id="smart-hint" class="abanner ab-info mb2 hidden">
+          <span class="ab-icon">💡</span>
+          <div class="ab"><strong id="smart-hint-text">—</strong><p id="l-smart-sub">Определён по времени. Можно изменить.</p></div>
+        </div>
+        <div class="flex g3 ia" style="align-items:flex-end;margin-bottom:12px">
+          <div class="f1">
+            <label class="flabel" id="l-sys">Систолическое</label>
+            <input type="number" id="e-sys" class="fi-big" placeholder="120" min="60" max="260" inputmode="numeric" oninput="onBP()">
+            <div class="fi-sub" id="l-upper">верхнее</div>
+          </div>
+          <div style="font-size:30px;color:var(--dim);padding-bottom:24px">/</div>
+          <div class="f1">
+            <label class="flabel" id="l-dia">Диастолическое</label>
+            <input type="number" id="e-dia" class="fi-big" placeholder="80" min="30" max="180" inputmode="numeric" oninput="onBP()">
+            <div class="fi-sub" id="l-lower">нижнее</div>
+          </div>
+        </div>
+        <div id="pp-row" class="hidden" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div class="card card-sm" style="background:var(--surface);text-align:center">
+            <div class="xs dim" id="l-pp">Пульсовое давление</div>
+            <div class="mono bold white mt1" id="e-pp" style="font-size:22px">—</div>
+          </div>
+          <div class="card card-sm" style="background:var(--surface)">
+            <label class="xs dim" for="e-hr" id="l-hr">ЧСС (уд/мин)</label>
+            <input type="number" id="e-hr" class="fi mt1" placeholder="72" min="30" max="220" inputmode="numeric" style="padding:6px 10px;font-size:16px">
+          </div>
+        </div>
+        <div id="e-status-z" class="hidden mb2">
+          <div id="e-status-pill" class="spill sp-ok">● —</div>
+          <div id="e-pp-warn" class="xs dim mt1 hidden"></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="flabel"><span id="l-why">Почему измерили?</span> <em id="l-opt">опционально</em></label>
+          <div class="xs dim mb2" id="l-trig-hint">💡 Помогает выявить ваши личные триггеры АД</div>
+          <span class="chip-cat" id="l-ca">А — Плановые</span>
+          <div class="chips">
+            <div class="chip" data-k="mb" onclick="togT(this)">☀️ <span id="t-mb">Утро до лекарств</span></div>
+            <div class="chip" data-k="ma" onclick="togT(this)">💊 <span id="t-ma">Утро после лекарств</span></div>
+            <div class="chip" data-k="ev" onclick="togT(this)">🌙 <span id="t-ev">Вечернее</span></div>
+            <div class="chip" data-k="re" onclick="togT(this)">🔔 <span id="t-re">По напоминанию</span></div>
+          </div>
+          <span class="chip-cat" id="l-cb">Б — Симптомы</span>
+          <div class="chips">
+            <div class="chip" data-k="hd" onclick="togT(this)">🤕 <span id="t-hd">Головная боль</span></div>
+            <div class="chip" data-k="dz" onclick="togT(this)">💫 <span id="t-dz">Головокружение</span></div>
+            <div class="chip" data-k="pal" onclick="togT(this)">💓 <span id="t-pal">Сердцебиение</span></div>
+            <div class="chip" data-k="dys" onclick="togT(this)">😮‍💨 <span id="t-dys">Одышка</span></div>
+            <div class="chip" data-k="ch" onclick="togT(this)">⚡ <span id="t-ch">Боль в груди</span></div>
+            <div class="chip" data-k="vis" onclick="togT(this)">👁️ <span id="t-vis">Нарушение зрения</span></div>
+            <div class="chip" data-k="wk" onclick="togT(this)">🫠 <span id="t-wk">Слабость</span></div>
+            <div class="chip" data-k="tin" onclick="togT(this)">🔊 <span id="t-tin">Шум в ушах</span></div>
+            <div class="chip" data-k="num" onclick="togT(this)">🖐️ <span id="t-num">Онемение</span></div>
+          </div>
+          <span class="chip-cat" id="l-cc">В — Контекст</span>
+          <div class="chips">
+            <div class="chip" data-k="ex" onclick="togT(this)">🏃 <span id="t-ex">После нагрузки</span></div>
+            <div class="chip" data-k="st" onclick="togT(this)">😤 <span id="t-st">После стресса</span></div>
+            <div class="chip" data-k="ml" onclick="togT(this)">🍽️ <span id="t-ml">После еды</span></div>
+            <div class="chip" data-k="cf" onclick="togT(this)">☕ <span id="t-cf">После кофе</span></div>
+            <div class="chip" data-k="nw" onclick="togT(this)">🌃 <span id="t-nw">После ночного пробуждения</span></div>
+            <div class="chip" data-k="am" onclick="togT(this)">💊 <span id="t-am">После приёма лекарства</span></div>
+            <div class="chip" data-k="rs" onclick="togT(this)">😴 <span id="t-rs">После отдыха</span></div>
+          </div>
+          <span class="chip-cat" id="l-cd">Г — Погода/среда</span>
+          <div class="chips">
+            <div class="chip" data-k="al" onclick="togT(this)">🌪️ <span id="t-al">По алерту приложения</span></div>
+            <div class="chip" data-k="ht" onclick="togT(this)">🌡️ <span id="t-ht">В жару</span></div>
+            <div class="chip" data-k="sn" onclick="togT(this)">☀️ <span id="t-sn">После солнца</span></div>
+          </div>
+          <span class="chip-cat" id="l-ce">Д — Без триггера</span>
+          <div class="chips">
+            <div class="chip" data-k="ok" onclick="togT(this)">✅ <span id="t-ok">Плановое — всё хорошо</span></div>
+            <div class="chip" data-k="jc" onclick="togT(this)">🔍 <span id="t-jc">На всякий случай</span></div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="flabel" for="e-notes">Заметки <em id="l-opt2">опционально</em></label>
+          <input type="text" id="e-notes" class="fi" placeholder="Съел солёное, не спал...">
+        </div>
+        <button class="btn btn-p" onclick="saveBP()">💾 <span id="l-save">Сохранить измерение</span></button>
+      </div>
+
+      <div class="card">
+        <div class="c-hdr">
+          <span class="c-title">SpO₂</span>
+          <div class="tog-row">
+            <label class="tog"><input type="checkbox" id="spo2-tog" onchange="togSpO2()"><span class="tslider"></span></label>
+            <span class="xs dim" id="l-opt3">опционально</span>
+          </div>
+        </div>
+        <div id="spo2-sec" class="hidden">
+          <div class="flex ia g3 mb2">
+            <div>
+              <label class="flabel">SpO₂</label>
+              <input type="number" id="e-spo2" class="fi-big" placeholder="97" min="70" max="100" inputmode="numeric" oninput="onSpo2()" style="max-width:100px;font-size:30px">
+            </div>
+            <div style="padding-bottom:10px;font-size:20px" class="dim">%</div>
+            <div id="spo2-live" class="f1"></div>
+          </div>
+          <label class="flabel" id="l-spo2-trig">Причина <em id="l-opt4">опционально</em></label>
+          <div class="chips">
+            <div class="chip" data-s="no" onclick="togS(this)">✅ <span id="st-no">Без причины</span></div>
+            <div class="chip" data-s="dy" onclick="togS(this)">😮‍💨 <span id="st-dy">Одышка</span></div>
+            <div class="chip" data-s="ch" onclick="togS(this)">⚡ <span id="st-ch">Дискомфорт в груди</span></div>
+            <div class="chip" data-s="pl" onclick="togS(this)">💓 <span id="st-pl">Сердцебиение</span></div>
+            <div class="chip" data-s="dz" onclick="togS(this)">💫 <span id="st-dz">Головокружение</span></div>
+            <div class="chip" data-s="wk" onclick="togS(this)">🫠 <span id="st-wk">Слабость</span></div>
+            <div class="chip" data-s="ex" onclick="togS(this)">🏃 <span id="st-ex">После нагрузки</span></div>
+            <div class="chip" data-s="ht" onclick="togS(this)">🌡️ <span id="st-ht">В жару</span></div>
+            <div class="chip" data-s="nw" onclick="togS(this)">🌙 <span id="st-nw">Ночное пробуждение</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: DIARY -->
+    <div id="t-diary" class="tab">
+      <div class="card">
+        <div class="c-hdr">
+          <span class="c-title" id="l-diary">Дневник симптомов</span>
+          <span class="xs dim" id="diary-date">—</span>
+        </div>
+        <div class="xs dim mb3" id="l-diary-sub">Оцените самочувствие. Данные используются в анализе корреляций и отчёте для врача.</div>
+        <div id="sym-domains"></div>
+        <div class="s-hdr"><div class="s-title" id="l-ctx-title">Контекст дня</div><div class="s-line"></div></div>
+        <div style="margin-bottom:12px">
+          <label class="flabel" id="l-salt">Соль сегодня</label>
+          <div class="chips">
+            <div class="chip" data-c="salt" data-v="low" onclick="togCtx(this,'salt')">🟢 <span id="l-s-lo">Низкая</span></div>
+            <div class="chip" data-c="salt" data-v="med" onclick="togCtx(this,'salt')">🟡 <span id="l-s-me">Средняя</span></div>
+            <div class="chip" data-c="salt" data-v="hi" onclick="togCtx(this,'salt')">🔴 <span id="l-s-hi">Высокая</span></div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="flabel" id="l-act">Активность <em>мин</em></label>
+          <input type="number" id="ctx-act" class="fi" placeholder="30" min="0" max="480" inputmode="numeric">
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="flabel"><span id="l-stress">Стресс</span> <span class="teal mono bold" id="stress-v">0</span></label>
+          <div class="nrs-wrap">
+            <input type="range" id="ctx-stress" min="0" max="10" value="0" oninput="updSlider(this,'stress-v')">
+            <div class="nrs-labs"><span>0</span><span>5</span><span>10</span></div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="flabel"><span id="l-fluids">Жидкость</span> <em id="l-pots-f">важно при POTS</em> <em>мл</em></label>
+          <input type="number" id="ctx-fluids" class="fi" placeholder="1500" min="0" max="6000" inputmode="numeric">
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="flabel" id="l-meds">Лекарства приняты</label>
+          <div class="tog-row">
+            <label class="tog"><input type="checkbox" id="ctx-meds" checked><span class="tslider"></span></label>
+            <span class="sm" id="ctx-meds-lbl">Да</span>
+          </div>
+        </div>
+        <button class="btn btn-p" onclick="saveDiary()">💾 <span id="l-save-d">Сохранить дневник</span></button>
+      </div>
+    </div>
+
+    <!-- TAB: ANALYTICS -->
+    <div id="t-analytics" class="tab">
+      <div class="card">
+        <div class="c-title mb3" id="l-my-stats">Моя статистика</div>
+        <div class="sgg" id="stats-grid">
+          <div class="sg"><div class="sg-val" id="st-sys">—</div><div class="sg-lbl" id="l-st-sys">Ср. САД</div></div>
+          <div class="sg"><div class="sg-val" id="st-dia">—</div><div class="sg-lbl" id="l-st-dia">Ср. ДАД</div></div>
+          <div class="sg"><div class="sg-val" id="st-cnt">—</div><div class="sg-lbl" id="l-st-cnt">Измерений</div></div>
+          <div class="sg"><div class="sg-val" id="st-pp">—</div><div class="sg-lbl" id="l-st-pp">Ср. PP</div></div>
+          <div class="sg"><div class="sg-val" id="st-pct">—</div><div class="sg-lbl" id="l-st-pct">В норме %</div></div>
+          <div class="sg"><div class="sg-val" id="st-days">—</div><div class="sg-lbl" id="l-st-days">Дней</div></div>
+        </div>
+      </div>
+      <div class="card" id="bp-chart-card">
+        <div class="c-hdr">
+          <span class="c-title" id="l-bp-time">АД во времени</span>
+          <div class="flex g2">
+            <button class="btn btn-p btn-sm" id="btn-7d" onclick="setRange(7)" style="width:auto">7д</button>
+            <button class="btn btn-s btn-sm" id="btn-30d" onclick="setRange(30)" style="width:auto">30д</button>
+          </div>
+        </div>
+        <div class="ch-wrap" style="height:150px"><canvas id="bp-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="c-hdr">
+          <span class="c-title" id="l-my-trig">Мои погодные триггеры</span>
+          <span class="xs dim" id="corr-status">—</span>
+        </div>
+        <div id="corr-list">
+          <div class="empty"><div class="empty-icon">📈</div><p class="sm" id="l-corr-empty">Появится после 30+ измерений</p></div>
+        </div>
+        <div class="xs dim mt2" id="l-ev-legend"><span class="ev ev-g">★</span> сильная доказательность &nbsp;<span class="ev ev-y">◆</span> умеренная &nbsp;<span class="ev ev-b">○</span> экспериментальная</div>
+      </div>
+      <div class="card">
+        <div class="c-hdr">
+          <span class="c-title" id="l-all-rec">Все записи</span>
+          <button class="btn btn-d btn-sm" onclick="confirmClear()" style="width:auto" id="l-clear">Очистить</button>
+        </div>
+        <div id="all-list"><div class="empty"><p class="sm dim" id="l-no-rec">Нет записей</p></div></div>
+      </div>
+    </div>
+
+    <!-- TAB: REPORT -->
+    <div id="t-report" class="tab">
+      <div class="card">
+        <div class="c-title mb1" id="l-rep-title">Отчёт для врача</div>
+        <div class="xs dim mb3"><span id="l-rep-sub">Создан:</span> <span id="rep-date">—</span></div>
+        <div class="flex g2 mb3">
+          <button class="btn btn-p btn-sm" id="btn-esh" onclick="setRepFmt('esh')" style="width:auto">ESH (кардиолог)</button>
+          <button class="btn btn-s btn-sm" id="btn-gp" onclick="setRepFmt('gp')" style="width:auto">Семейный врач</button>
+        </div>
+        <div id="rep-body">
+          <div class="empty"><div class="empty-icon">📋</div><p class="sm" id="l-rep-empty">Нужно минимум 7 дней измерений</p></div>
+        </div>
+        <div id="rep-actions" class="hidden flex g2 mt3">
+          <button class="btn btn-p" onclick="copyRep()">📋 <span id="l-copy">Скопировать</span></button>
+          <button class="btn btn-s" onclick="shareRep()">📤 <span id="l-share">Поделиться</span></button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /scroll -->
+
+  <nav id="nav">
+    <button class="nb on" id="nb-home" onclick="goTab('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+      <span id="l-nb-home">Главная</span>
+    </button>
+    <button class="nb" id="nb-entry" onclick="goTab('entry')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span id="l-nb-entry">Запись</span>
+    </button>
+    <button class="nb" id="nb-diary" onclick="goTab('diary')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span id="l-nb-diary">Дневник</span>
+    </button>
+    <button class="nb" id="nb-analytics" onclick="goTab('analytics')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span id="l-nb-an">Анализ</span>
+    </button>
+    <button class="nb" id="nb-report" onclick="goTab('report')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span id="l-nb-rep">Отчёт</span>
+    </button>
+  </nav>
+</div><!-- /main -->
+
+<!-- Geo confirmation modal -->
+<div class="mo" id="geoModal" style="align-items:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);width:100%;max-width:400px;padding:24px 20px;box-shadow:0 8px 32px rgba(58,48,40,.15)">
+    <div class="mtitle" id="l-geo-confirm">Ваше местоположение</div>
+    <div id="modal-loc-name" style="font-size:1rem;font-weight:600;color:var(--accent);margin:10px 0;padding:10px 14px;background:var(--accent-glow);border-radius:var(--r);border:1px solid var(--border)">—</div>
+    <div id="modal-loc-sub" class="xs dim mb3" style="line-height:1.6"></div>
+    <div class="flex g2">
+      <button class="btn btn-p" onclick="confirmGeo()" style="flex:2">✓ <span id="l-yes-correct">Да, верно</span></button>
+      <button class="btn btn-s" onclick="retryGeo()" style="flex:1"><span id="l-retry">Повторить</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- City change modal (settings) -->
+<div class="mo" id="cityModal" style="align-items:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);width:100%;max-width:400px;padding:24px 20px;box-shadow:0 8px 32px rgba(58,48,40,.15)">
+    <div class="mtitle">📍 Изменить город</div>
+    <div style="position:relative;margin:14px 0 10px">
+      <input type="text" id="city-modal-input" class="fi" placeholder="🔍 Введите город..." oninput="onCityModalInput(this.value)" autocomplete="off" style="font-size:.8rem">
+      <div id="city-modal-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-top:none;border-radius:0 0 var(--r) var(--r);z-index:100;max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="xs dim mb3">или</div>
+    <button class="btn btn-s" onclick="reqLocFromModal()" style="font-size:.72rem;padding:8px 14px;width:100%">📍 Определить по GPS</button>
+    <div id="city-modal-status" class="xs dim mt2"></div>
+    <button class="btn btn-s mt3" onclick="closeMo('cityModal')" style="width:100%">Отмена</button>
+  </div>
+</div>
+
+<!-- Emergency overlay -->
+<div id="emo">
+  <div class="ebox">
+    <div class="eicon">🚨</div>
+    <div class="etitle" id="e-title">Очень высокое давление</div>
+    <div class="esub" id="e-bp">—</div>
+    <div class="esub" id="e-q">Есть ли сейчас симптомы?</div>
+    <div class="schklist">
+      <label class="schi"><input type="checkbox" id="sx1"> <span id="sx-hd">Сильная головная боль</span></label>
+      <label class="schi"><input type="checkbox" id="sx2"> <span id="sx-ch">Боль в груди</span></label>
+      <label class="schi"><input type="checkbox" id="sx3"> <span id="sx-dy">Одышка</span></label>
+      <label class="schi"><input type="checkbox" id="sx4"> <span id="sx-vi">Нарушение зрения</span></label>
+      <label class="schi"><input type="checkbox" id="sx5"> <span id="sx-sp">Нарушение речи / слабость руки</span></label>
+      <label class="schi"><input type="checkbox" id="sx6"> <span id="sx-cn">Спутанность сознания</span></label>
+    </div>
+    <button class="btn btn-d mb2" onclick="evalEmergency()" id="e-check">Проверить — что делать?</button>
+    <button class="btn btn-s" onclick="closeEmo()" id="e-close">Закрыть</button>
+  </div>
+</div>
+
+<!-- Weather detail modal -->
+<div class="mo" id="wmo">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="l-wdet">Погодные данные</div>
+    <div id="wdet-body"></div>
+    <button class="btn btn-s mt3" onclick="closeMo('wmo')" id="l-close">Закрыть</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+<script>
+// ══════════════════════════════════════════════════════
+//  КардиоПогода v1.1 — Fixed JS Engine
+// ══════════════════════════════════════════════════════
+
+// ── I18N ──────────────────────────────────────────────
+const I18N = {
+  ru:{
+    'o-sub':'Мониторинг АД с погодной аналитикой','o-t1':'Ваш профиль',
+    'o-s1':'Выберите одну или несколько групп — это настроит пороги и аналитику',
+    'd-htn':'Гипертензия','d-htn-d':'Повышенное АД, приём препаратов',
+    'd-pots-d':'Ортостатическая тахикардия, дисавтономия',
+    'd-meta':'Метаб. синдром','d-meta-d':'Диабет, ожирение, дислипидемия',
+    'd-elder':'Пожилой возраст','d-elder-d':'Изолированная систолическая гипертензия',
+    'o-t2':'Целевые значения АД','o-s2':'Укажите цифры от вашего врача. Если не знаете — оставьте по умолчанию.',
+    'l-tsys':'Систолическое цель','l-tdia':'Диастолическое цель',
+    'l-esh-hint':'ESH 2023 цель: <130/80; HBPM порог АГ: ≥135/85',
+    'l-baseline':'ваша норма','l-spo2hint':'Для отслеживания снижения ≥3%',
+    'o-t3':'Текущие препараты','o-s3':'Опционально. Отображается в отчёте для врача.',
+    'l-addmed':'Добавить препарат','l-before':'Измерения до лекарств утром','l-before-h':'Рекомендуется ESH 2023',
+    'o-t4':'Погодные данные','o-s4':'Приложение собирает температуру, PM2.5, PM10, давление и Kp-индекс.',
+    'l-auto':'Автоматический сбор','l-loc-need':'Нужна геолокация','l-loc-sub':'Для точных местных данных',
+    'l-allow':'Определить моё местоположение',
+    'l-hamsin':'Хамсин-детектор','l-hamsin-d':'Автоматически определяет опасные дни и предупреждает',
+    'o-t5':'Всё готово!','o-s5':'Начните с первого измерения. Персональная аналитика — после 30+ записей.',
+    'l-steps':'Первые шаги:','l-st1':'Утром, до лекарств — измерьте АД дважды',
+    'l-st2':'Отметьте триггер измерения','l-st3':'Вечером — повторите',
+    'l-back':'Назад','l-next':'Далее →','l-done':'Начать →',
+    'l-last-reading':'Последнее измерение','l-no-data':'Нет данных.\nДобавьте первое измерение АД.',
+    'l-add-first':'Добавить','l-risk':'Кардио-риск','l-weather':'Погода','l-loading':'Загрузка...',
+    'l-surge':'Утренний подъём','l-surge-h':'утро − вечер (вчера)','l-surge-avg':'7-дн. ср.',
+    'l-trend':'Тренд АД (7 дней)','l-recent':'Последние записи','l-see-all':'Все записи →',
+    'l-bp-entry':'Измерение АД','l-smart-sub':'Определён по времени. Можно изменить.',
+    'l-sys':'Систолическое','l-dia':'Диастолическое','l-upper':'верхнее','l-lower':'нижнее',
+    'l-pp':'Пульсовое давление','l-hr':'ЧСС (уд/мин)','l-notes':'Заметки','l-opt':'опционально',
+    'l-why':'Почему измерили?','l-trig-hint':'💡 Помогает выявить ваши личные триггеры АД',
+    'l-ca':'А — Плановые','l-cb':'Б — Симптомы','l-cc':'В — Контекст','l-cd':'Г — Погода','l-ce':'Д — Без триггера',
+    't-mb':'Утро до лекарств','t-ma':'Утро после лекарств','t-ev':'Вечернее','t-re':'По напоминанию',
+    't-hd':'Головная боль','t-dz':'Головокружение','t-pal':'Сердцебиение','t-dys':'Одышка',
+    't-ch':'Боль в груди','t-vis':'Нарушение зрения','t-wk':'Слабость','t-tin':'Шум в ушах','t-num':'Онемение',
+    't-ex':'После нагрузки','t-st':'После стресса','t-ml':'После еды','t-cf':'После кофе',
+    't-nw':'После ночного пробуждения','t-am':'После лекарства','t-rs':'После отдыха',
+    't-al':'По алерту приложения','t-ht':'В жару','t-sn':'После солнца',
+    't-ok':'Плановое — всё хорошо','t-jc':'На всякий случай',
+    'l-save':'Сохранить измерение','l-spo2-trig':'Причина SpO₂',
+    'st-no':'Без причины','st-dy':'Одышка','st-ch':'Дискомфорт в груди','st-pl':'Сердцебиение',
+    'st-dz':'Головокружение','st-wk':'Слабость','st-ex':'После нагрузки','st-ht':'В жару','st-nw':'Ночное пробуждение',
+    'l-diary':'Дневник симптомов','l-diary-sub':'Оцените самочувствие. Данные используются в корреляционном анализе.',
+    'l-ctx-title':'Контекст дня','l-salt':'Соль сегодня','l-s-lo':'Низкая','l-s-me':'Средняя','l-s-hi':'Высокая',
+    'l-act':'Активность','l-stress':'Стресс','l-fluids':'Жидкость','l-pots-f':'важно при POTS',
+    'l-meds':'Лекарства приняты','l-save-d':'Сохранить дневник',
+    'l-my-stats':'Моя статистика','l-st-sys':'Ср. САД','l-st-dia':'Ср. ДАД','l-st-cnt':'Измерений',
+    'l-st-pp':'Ср. PP','l-st-pct':'В норме %','l-st-days':'Дней',
+    'l-bp-time':'АД во времени','l-my-trig':'Мои погодные триггеры','l-corr-empty':'Появится после 30+ измерений',
+    'l-ev-legend':'<span class="ev ev-g">★</span> сильная доказательность &nbsp;<span class="ev ev-y">◆</span> умеренная &nbsp;<span class="ev ev-b">○</span> экспериментальная',
+    'l-all-rec':'Все записи','l-clear':'Очистить','l-no-rec':'Нет записей',
+    'l-rep-title':'Отчёт для врача','l-rep-sub':'Создан:',
+    'l-rep-empty':'Нужно минимум 7 дней измерений','l-copy':'Скопировать','l-share':'Поделиться',
+    'e-title':'Очень высокое давление','e-q':'Есть ли сейчас симптомы?',
+    'sx-hd':'Сильная головная боль','sx-ch':'Боль в груди','sx-dy':'Одышка',
+    'sx-vi':'Нарушение зрения','sx-sp':'Нарушение речи / слабость руки','sx-cn':'Спутанность сознания',
+    'e-check':'Проверить — что делать?','e-close':'Закрыть',
+    'l-wdet':'Погодные данные','l-close':'Закрыть',
+    'l-nb-home':'Главная','l-nb-entry':'Запись','l-nb-diary':'Дневник','l-nb-an':'Анализ','l-nb-rep':'Отчёт',
+    'st-ok':'Оптимальное','st-norm':'Норма','st-el':'Повышенное','st-h1':'АГ I ст.','st-h2':'АГ II ст.',
+    'st-cr':'Гипертонический криз','st-lo':'Пониженное',
+    'risk-lo':'Низкий','risk-mod':'Умеренный','risk-hi':'Повышенный','risk-vhi':'Высокий',
+    'surge-ok':'Норма','surge-watch':'Внимание','surge-hi':'Высокий',
+    'pp-ok':'Норма','pp-w':'Внимание','pp-hi':'Высокое',
+    'spo2-ok':'Норма','spo2-lo':'Ниже нормы','spo2-mod':'Умеренно','spo2-cr':'Критично','spo2-rel':'↓ от нормы',
+    'hamsin-title':'Хамсин / שרב','hamsin-sub':'Повышенный риск: измеряйте чаще, пейте воду.',
+    'sym-hd':'Головная боль','sym-dz':'Головокружение / ортостаз','sym-cd':'Кардио симптомы',
+    'sym-dy':'Одышка / нагрузка','sym-fa':'Усталость / слабость','sym-vi':'Нарушения зрения',
+    'sym-mo':'Настроение / туман','sym-sl':'Качество сна',
+    'corr-tmp':'Температура ↔ САД','corr-pm':'PM2.5 ↔ САД','corr-pm10':'PM10 ↔ САД',
+    'corr-dp':'Перепад давления ↔ САД','corr-kp':'Kp-индекс ↔ ДАД','corr-surge':'Температура ↔ Подъём',
+    'pp-warn':'⚠️ Повышенное пульсовое давление',
+    'e-amb':'🚑 ВЫЗОВИТЕ СКОРУЮ (101)','e-doc':'Обратитесь к врачу сегодня','e-remeas':'Перемерьте через 5 мин покоя',
+    'l-geo-confirm':'Ваше местоположение','l-yes-correct':'Да, верно','l-retry':'Повторить',
+    'l-loc-sub':'Определим ваш город и высоту над уровнем моря',
+  },
+  he:{
+    'o-sub':'ניטור לחץ דם עם ניתוח מזג אוויר','o-t1':'הפרופיל שלך',
+    'o-s1':'בחר קבוצה אחת או יותר — לכוונון הסיפים והניתוח',
+    'd-htn':'יתר לחץ דם','d-htn-d':'ל"ד גבוה, נטילת תרופות',
+    'd-pots-d':'טכיקרדיה אורתוסטטית, דיסאוטונומיה',
+    'd-meta':'סינד. מטבולי','d-meta-d':'סוכרת, השמנה, דיסליפידמיה',
+    'd-elder':'גיל מבוגר','d-elder-d':'יתר ל"ד סיסטולי מבודד',
+    'o-t2':'יעדי לחץ דם','o-s2':'הזן ערכי יעד מהרופא. אם אינך יודע — השאר ברירת מחדל.',
+    'l-tsys':'סיסטולי יעד','l-tdia':'דיאסטולי יעד',
+    'l-esh-hint':'ESH 2023: יעד <130/80; סף יתר ל"ד ביתי ≥135/85',
+    'l-baseline':'הנורמה שלך','l-spo2hint':'למעקב ירידה יחסית ≥3%',
+    'o-t3':'תרופות נוכחיות','o-s3':'אופציונלי. מופיע בדוח לרופא.',
+    'l-addmed':'הוסף תרופה','l-before':'מדידה לפני תרופות בבוקר','l-before-h':'מומלץ ESH 2023',
+    'o-t4':'נתוני מזג אוויר','o-s4':'האפליקציה אוספת טמפ׳, PM2.5, PM10, לחץ אטמ׳ ומדד Kp.',
+    'l-auto':'איסוף אוטומטי','l-loc-need':'נדרשת גישה למיקום','l-loc-sub':'לנתוני מזג אוויר מקומיים',
+    'l-allow':'קבע את מיקומי',
+    'l-hamsin':'גלאי חמסין','l-hamsin-d':'מזהה אוטומטית ימי סיכון ומתריע',
+    'o-t5':'הכל מוכן!','o-s5':'התחל עם המדידה הראשונה. ניתוח אישי — לאחר 30+ מדידות.',
+    'l-steps':'צעדים ראשונים:','l-st1':'בבוקר, לפני תרופות — מדוד פעמיים',
+    'l-st2':'סמן את הסיבה למדידה','l-st3':'בערב — חזור',
+    'l-back':'חזור','l-next':'הבא →','l-done':'התחל →',
+    'l-last-reading':'מדידה אחרונה','l-no-data':'אין נתונים.\nהוסף מדידה ראשונה.',
+    'l-add-first':'הוסף','l-risk':'סיכון קרדיו','l-weather':'מזג אוויר','l-loading':'טוען...',
+    'l-surge':'עלייה בוקרית','l-surge-h':'בוקר פחות ערב','l-surge-avg':'ממוצע 7 ימים',
+    'l-trend':'מגמת ל"ד (7 ימים)','l-recent':'רשומות אחרונות','l-see-all':'כל הרשומות ←',
+    'l-bp-entry':'מדידת לחץ דם','l-smart-sub':'זוהה לפי שעה. ניתן לשנות.',
+    'l-sys':'סיסטולי','l-dia':'דיאסטולי','l-upper':'עליון','l-lower':'תחתון',
+    'l-pp':'לחץ דופק','l-hr':'דופק (פעימות/דקה)','l-notes':'הערות','l-opt':'אופציונלי',
+    'l-why':'מדוע מדדת?','l-trig-hint':'💡 עוזר לזהות את הטריגרים האישיים שלך',
+    'l-ca':'א — מתוכנן','l-cb':'ב — תסמינים','l-cc':'ג — הקשר','l-cd':'ד — מזג אוויר','l-ce':'ה — ללא טריגר',
+    't-mb':'בוקר לפני תרופות','t-ma':'בוקר אחרי תרופות','t-ev':'ערב','t-re':'לפי תזכורת',
+    't-hd':'כאב ראש','t-dz':'סחרחורת','t-pal':'דפיקות לב','t-dys':'קוצר נשימה',
+    't-ch':'כאב בחזה','t-vis':'הפרעות ראייה','t-wk':'חולשה','t-tin':'צלצול אוזניים','t-num':'נימול',
+    't-ex':'אחרי פעילות','t-st':'אחרי מתח','t-ml':'אחרי אוכל','t-cf':'אחרי קפה',
+    't-nw':'אחרי יקיצה לילית','t-am':'אחרי תרופה','t-rs':'אחרי מנוחה',
+    't-al':'לפי התראת האפליקציה','t-ht':'בחום','t-sn':'אחרי שמש',
+    't-ok':'שגרתי — הכל בסדר','t-jc':'בודק ליתר ביטחון',
+    'l-save':'שמור מדידה','l-spo2-trig':'סיבת מדידת SpO₂',
+    'st-no':'ללא סיבה','st-dy':'קוצר נשימה','st-ch':'אי נוחות בחזה','st-pl':'דפיקות לב',
+    'st-dz':'סחרחורת','st-wk':'חולשה','st-ex':'אחרי פעילות','st-ht':'בחום','st-nw':'יקיצה לילית',
+    'l-diary':'יומן תסמינים','l-diary-sub':'דרג את הרגשתך. הנתונים משמשים לניתוח קורלציות.',
+    'l-ctx-title':'הקשר יומי','l-salt':'מלח היום','l-s-lo':'נמוך','l-s-me':'בינוני','l-s-hi':'גבוה',
+    'l-act':'פעילות גופנית','l-stress':'מתח','l-fluids':'נוזלים','l-pots-f':'חשוב ב-POTS',
+    'l-meds':'תרופות נלקחו','l-save-d':'שמור יומן',
+    'l-my-stats':'הסטטיסטיקה שלי','l-st-sys':'ממוצע סיסטולי','l-st-dia':'ממוצע דיאסטולי','l-st-cnt':'מדידות',
+    'l-st-pp':'ממוצע PP','l-st-pct':'% ביעד','l-st-days':'ימים',
+    'l-bp-time':'ל"ד לאורך זמן','l-my-trig':'הטריגרים שלי','l-corr-empty':'יופיע לאחר 30+ מדידות',
+    'l-ev-legend':'<span class="ev ev-g">★</span> ראיות חזקות &nbsp;<span class="ev ev-y">◆</span> מתונות &nbsp;<span class="ev ev-b">○</span> ניסיוניות',
+    'l-all-rec':'כל הרשומות','l-clear':'מחק','l-no-rec':'אין רשומות',
+    'l-rep-title':'דוח לרופא','l-rep-sub':'נוצר:',
+    'l-rep-empty':'נדרשים לפחות 7 ימי מדידות','l-copy':'העתק','l-share':'שתף',
+    'e-title':'לחץ דם גבוה מאוד','e-q':'האם יש כרגע תסמינים?',
+    'sx-hd':'כאב ראש חמור','sx-ch':'כאב בחזה','sx-dy':'קוצר נשימה',
+    'sx-vi':'הפרעות ראייה','sx-sp':'הפרעת דיבור / חולשת יד','sx-cn':'בלבול',
+    'e-check':'בדוק — מה לעשות?','e-close':'סגור',
+    'l-wdet':'נתוני מזג אוויר','l-close':'סגור',
+    'l-nb-home':'ראשי','l-nb-entry':'רישום','l-nb-diary':'יומן','l-nb-an':'ניתוח','l-nb-rep':'דוח',
+    'st-ok':'אופטימלי','st-norm':'תקין','st-el':'מוגבה','st-h1':'יתר ל"ד דרגה 1','st-h2':'יתר ל"ד דרגה 2',
+    'st-cr':'משבר יתר לחץ דם','st-lo':'נמוך',
+    'risk-lo':'נמוך','risk-mod':'בינוני','risk-hi':'מוגבר','risk-vhi':'גבוה',
+    'surge-ok':'תקין','surge-watch':'שים לב','surge-hi':'גבוה',
+    'pp-ok':'תקין','pp-w':'שים לב','pp-hi':'מוגבר',
+    'spo2-ok':'תקין','spo2-lo':'מתחת לנורמה','spo2-mod':'בינוני','spo2-cr':'קריטי','spo2-rel':'↓ מהנורמה',
+    'hamsin-title':'חמסין / שרב','hamsin-sub':'סיכון מוגבר: מדוד יותר, שתה מים.',
+    'sym-hd':'כאב ראש','sym-dz':'סחרחורת / אורתוסטטי','sym-cd':'תסמינים לבביים',
+    'sym-dy':'קוצר נשימה / מאמץ','sym-fa':'עייפות / חולשה','sym-vi':'הפרעות ראייה',
+    'sym-mo':'מצב רוח / ערפל','sym-sl':'איכות שינה',
+    'corr-tmp':'טמפרטורה ↔ סיסטולי','corr-pm':'PM2.5 ↔ סיסטולי','corr-pm10':'PM10 ↔ סיסטולי',
+    'corr-dp':'שינוי לחץ ↔ סיסטולי','corr-kp':'Kp ↔ דיאסטולי','corr-surge':'טמפרטורה ↔ עלייה',
+    'pp-warn':'⚠️ לחץ דופק מוגבר',
+    'e-amb':'🚑 קרא לאמבולנס (101)','e-doc':'פנה לרופא היום','e-remeas':'מדוד שוב לאחר 5 דקות מנוחה',
+    'l-geo-confirm':'המיקום שלך','l-yes-correct':'כן, נכון','l-retry':'נסה שוב',
+    'l-loc-sub':'נזהה את העיר שלך ואת הגובה מעל פני הים',
+  }
+};
+
+let LANG = 'ru';
+function T(k) { return I18N[LANG][k] || I18N.ru[k] || k; }
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'he' ? 'rtl' : 'ltr';
+  Object.keys(I18N[LANG]).forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.innerHTML = I18N[LANG][k];
+  });
+  document.getElementById('lang-toggle').textContent = LANG === 'ru' ? 'HE' : 'RU';
+  const htitle = document.getElementById('hdr-title');
+  if (htitle) {
+    if (LANG === 'he') {
+      htitle.innerHTML = '❤️‍🩺 קרדיו<em>מזג אוויר</em> <span id="hdr-city" style="font-family:var(--mono);font-style:normal;font-size:.65rem;color:var(--muted);font-weight:300;margin-left:6px"></span>';
+    } else {
+      htitle.innerHTML = '❤️‍🩺 Кардио<em>Погода</em> <span id="hdr-city" style="font-family:var(--mono);font-style:normal;font-size:.65rem;color:var(--muted);font-weight:300;margin-left:6px"></span>';
+    }
+  }
+  updateHeaderCity();
+  if (document.getElementById('main').style.display !== 'none') {
+    if (trendC) { trendC.destroy(); trendC = null; }
+    if (bpChart) { bpChart.destroy(); bpChart = null; }
+    renderHome(); updateAnalytics(); genReport();
+  }
+}
+
+function cycleLang() {
+  LANG = LANG === 'ru' ? 'he' : 'ru';
+  applyLang();
+}
+
+// ── STATE ─────────────────────────────────────────────
+let S = {
+  profile: null,
+  location: null,
+  weather: null,
+  readings: [],
+  diary: [],
+  corr: null,
+  lastWFetch: 0,
+};
+
+function load() {
+  try { const d = localStorage.getItem('cw_v1'); if (d) S = {...S, ...JSON.parse(d)}; } catch(e){}
+  if (!S.readings) S.readings = [];
+  if (!S.diary) S.diary = [];
+}
+
+function save() {
+  try { localStorage.setItem('cw_v1', JSON.stringify(S)); } catch(e){}
+}
+
+// ── ONBOARDING ─────────────────────────────────────────
+let onbN = 1;
+const ONB = 5;
+let selDiags = [];
+let medCount = 0;
+
+function onbNext() {
+  if (onbN === 1) {
+    // Re-sync from DOM to catch any toggle state
+    selDiags = Array.from(document.querySelectorAll('#diag-grid .dc.on'))
+      .map(el => el.dataset.d).filter(Boolean);
+    if (selDiags.length === 0) {
+      const grid = document.getElementById('diag-grid');
+      grid.style.animation = 'none';
+      void grid.offsetHeight;
+      grid.style.animation = 'shakeX .4s ease';
+      return;
+    }
+  }
+  if (onbN >= ONB) {
+    finishOnb();
+    return;
+  }
+  onbN++;
+  updOnbUI();
+}
+
+function onbBack() {
+  if (onbN > 1) { onbN--; updOnbUI(); }
+}
+
+function updOnbUI() {
+  for (let i = 1; i <= ONB; i++) {
+    const step = document.getElementById('os' + i);
+    if (step) step.className = 'onb-step' + (i === onbN ? ' on' : '');
+    const dot = document.getElementById('pd' + i);
+    if (dot) dot.className = 'pdot' + (i < onbN ? ' done' : i === onbN ? ' cur' : '');
+  }
+  const backBtn = document.getElementById('o-back');
+  if (backBtn) backBtn.classList.toggle('hidden', onbN === 1);
+  const nextSpan = document.getElementById('l-next');
+  if (nextSpan) nextSpan.textContent = onbN === ONB ? T('l-done') : T('l-next');
+
+  // Show location summary on step 5
+  if (onbN === 5) {
+    const loc5 = document.getElementById('os5-location');
+    if (loc5 && S.location?.nameRu) {
+      loc5.textContent = '📍 ' + (LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu)
+        + (S.location.alt ? ' · ' + S.location.alt + ' м н.у.м.' : '');
+    }
+  }
+}
+
+// FIX 1: finishOnb — was completely missing
+function finishOnb() {
+  S.profile = {
+    diagnoses: selDiags,
+    tSys: parseInt(document.getElementById('tsys').value) || 130,
+    tDia: parseInt(document.getElementById('tdia').value) || 80,
+    bSpo2: parseInt(document.getElementById('bspo2').value) || 97,
+    meds: getMeds(),
+    beforeMeds: document.getElementById('o-before').checked,
+  };
+  save();
+  document.getElementById('onb').style.display = 'none';
+  showMain();
+}
+
+function togD(el) {
+  const card = el.closest ? el.closest('[data-d]') : el;
+  if (!card) return;
+  card.classList.toggle('on');
+}
+
+function addMed() {
+  medCount++;
+  const div = document.createElement('div');
+  div.className = 'flex g2 mb2 ia';
+  div.id = 'mf' + medCount;
+  const mc = medCount;
+  div.innerHTML = '<input type="text" class="fi f1" placeholder="Препарат / תרופה / Dose" style="font-size:14px">' +
+    '<button onclick="document.getElementById(\'mf' + mc + '\').remove()" style="background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;flex-shrink:0">✕</button>';
+  document.getElementById('meds-wrap').appendChild(div);
+}
+
+function getMeds() {
+  return Array.from(document.querySelectorAll('#meds-wrap input'))
+    .map(i => i.value.trim()).filter(Boolean);
+}
+
+// ── CITY SEARCH (autocomplete via Open-Meteo Geocoding) ──────
+let _citySearchTimer = null;
+let _cityResults = [];
+
+function clearGeoErrors() {
+  const s = document.getElementById('geo-det-status');
+  if (s) { s.textContent = ''; s.classList.add('hidden'); }
+  const ls = document.getElementById('loc-status');
+  if (ls) { ls.className = 'abanner ab-info mb3'; ls.innerHTML = `<span class="ab-icon">📍</span><div class="ab"><strong id="l-loc-need">${T('l-loc-need')}</strong><p id="l-loc-sub">${T('l-loc-sub')}</p></div>`; }
+  const btn = document.getElementById('loc-btn');
+  if (btn) btn.innerHTML = `📍 <span id="l-allow">${T('l-allow')}</span>`;
+}
+
+function onCityInput(val) { _citySearch(val, 'city-suggestions', false); }
+function onCityModalInput(val) { _citySearch(val, 'city-modal-suggestions', true); }
+
+function _citySearch(val, suggestionsId, isModal) {
+  const box = document.getElementById(suggestionsId);
+  clearTimeout(_citySearchTimer);
+  if (val.length < 2) { box.style.display = 'none'; return; }
+  box.innerHTML = `<div style="padding:9px 12px;font-size:.72rem;color:var(--muted)">⏳ Поиск...</div>`;
+  box.style.display = 'block';
+  _citySearchTimer = setTimeout(async () => {
+    try {
+      const lang = LANG === 'he' ? 'he' : 'ru';
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=6&language=${lang}&format=json`);
+      const d = await r.json();
+      if (!d.results?.length) {
+        box.innerHTML = `<div style="padding:9px 12px;font-size:.72rem;color:var(--muted)">Город не найден</div>`;
+        return;
+      }
+      _cityResults = d.results;
+      box.innerHTML = _cityResults.map((c, i) => {
+        const label = [c.name, c.admin1, c.country].filter(Boolean).join(', ');
+        return `<div data-idx="${i}" style="padding:9px 12px;font-size:.75rem;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text)">${label}</div>`;
+      }).join('');
+      box.querySelectorAll('[data-idx]').forEach(el => {
+        el.addEventListener('mousedown', e => e.preventDefault());
+        el.addEventListener('click', () => {
+          const c = _cityResults[parseInt(el.dataset.idx)];
+          if (isModal) selectCityModal(c); else selectCityOnb(c);
+        });
+        el.addEventListener('mouseover', () => el.style.background = 'var(--surface2)');
+        el.addEventListener('mouseout', () => el.style.background = '');
+      });
+    } catch(e) {
+      box.innerHTML = `<div style="padding:9px 12px;font-size:.72rem;color:var(--muted)">⚠️ Ошибка сети. Попробуйте ещё раз.</div>`;
+    }
+  }, 350);
+}
+
+function _applyCity(c) {
+  _pendingLoc = {
+    lat: c.latitude, lon: c.longitude,
+    alt: c.elevation != null ? Math.round(c.elevation) : null,
+    nameRu: [c.name, c.country].filter(Boolean).join(', '),
+    nameHe: [c.name, c.country].filter(Boolean).join(', '),
+    source: 'manual',
+  };
+  // Try to get localized names
+  Promise.all([
+    reverseGeocode(c.latitude, c.longitude, 'ru').catch(() => null),
+    reverseGeocode(c.latitude, c.longitude, 'he').catch(() => null),
+  ]).then(([ru, he]) => {
+    if (ru) _pendingLoc.nameRu = ru;
+    if (he) _pendingLoc.nameHe = he;
+  });
+  showGeoModal();
+}
+
+function selectCityOnb(c) {
+  const box = document.getElementById('city-suggestions');
+  box.style.display = 'none';
+  document.getElementById('city-search-input').value = [c.name, c.country].filter(Boolean).join(', ');
+  _applyCity(c);
+}
+
+function selectCityModal(c) {
+  const box = document.getElementById('city-modal-suggestions');
+  box.style.display = 'none';
+  document.getElementById('city-modal-input').value = [c.name, c.country].filter(Boolean).join(', ');
+  closeMo('cityModal');
+  _applyCity(c);
+}
+
+function openCityModal() {
+  const inp = document.getElementById('city-modal-input');
+  if (inp) inp.value = '';
+  const box = document.getElementById('city-modal-suggestions');
+  if (box) box.style.display = 'none';
+  openMo('cityModal');
+  setTimeout(() => inp?.focus(), 100);
+}
+
+function reqLocFromModal() {
+  closeMo('cityModal');
+  reqLoc();
+}
+
+// ── GEOLOCATION (fibro mechanism) ─────────────────────
+// FIX 2: entire geolocation flow was missing
+let _pendingLoc = null;
+
+// ── Dual-strategy reverse geocoding ──────────────────
+// Strategy 1: BigDataCloud fetch (CORS:*, keyless, works from file:// in Chrome)
+// Strategy 2: Nominatim JSONP (bypasses CORS entirely, works everywhere)
+function reverseGeocode(lat, lon, lang) {
+  // Try BigDataCloud first — explicit CORS:* header, no key, no rate limit
+  const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client` +
+    `?latitude=${lat}&longitude=${lon}&localityLanguage=${lang}`;
+  const fetchAttempt = fetch(bdcUrl)
+    .then(r => { if (!r.ok) throw new Error('BDC ' + r.status); return r.json(); })
+    .then(d => d.city || d.locality || d.principalSubdivision || '');
+
+  // Build JSONP fallback using Nominatim
+  const jsonpAttempt = new Promise((resolve, reject) => {
+    const cb = '_ngeo_' + lang + '_' + Date.now();
+    const timer = setTimeout(() => { delete window[cb]; reject(new Error('JSONP timeout')); }, 10000);
+    window[cb] = d => {
+      clearTimeout(timer); delete window[cb];
+      const a = d.address || {};
+      resolve(a.city || a.town || a.village || a.hamlet || a.county || d.display_name?.split(',')[0] || '');
+    };
+    const s = document.createElement('script');
+    s.src = `https://nominatim.openstreetmap.org/reverse?format=json` +
+      `&lat=${lat}&lon=${lon}&accept-language=${lang}&zoom=10&json_callback=${cb}`;
+    s.onerror = () => { clearTimeout(timer); delete window[cb]; reject(new Error('JSONP script failed')); };
+    document.head.appendChild(s);
+  });
+
+  // Race: return whichever resolves first with a non-empty name
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = val => { if (!settled) { settled = true; resolve(val); } };
+    fetchAttempt.then(done).catch(() => {});
+    jsonpAttempt.then(done).catch(() => {});
+    // If both fail, reject
+    Promise.allSettled([fetchAttempt, jsonpAttempt]).then(results => {
+      if (!settled) {
+        const ok = results.find(r => r.status === 'fulfilled' && r.value);
+        if (ok) resolve(ok.value);
+        else reject(new Error('Не удалось определить город'));
+      }
+    });
+  });
+}
+
+// ── Elevation via Open-Meteo ──────────────────────────
+async function getElevation(lat, lon) {
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+    const d = await r.json();
+    return (d.elevation && d.elevation[0] != null) ? Math.round(d.elevation[0]) : null;
+  } catch(_) { return null; } // non-critical
+}
+
+// ── Status helper ─────────────────────────────────────
+function setGeoStatus(text) {
+  const el = document.getElementById('geo-det-status');
+  if (el) { el.classList.remove('hidden'); el.textContent = text; }
+}
+
+// ── Main geo flow ─────────────────────────────────────
+function reqLoc() {
+  const btn = document.getElementById('loc-btn');
+  if (btn) btn.innerHTML = '⏳ <span id="l-allow">Определяем...</span>';
+  setGeoStatus('Запрашиваем GPS...');
+
+  if (!navigator.geolocation) {
+    setLocError('Геолокация недоступна в этом браузере');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => geoSuccess(pos),
+    err => {
+      const msgs = {
+        1: 'Нет разрешения — разрешите доступ к геолокации в браузере',
+        2: 'Координаты недоступны — проверьте, что службы геолокации включены',
+        3: 'Таймаут GPS — попробуйте снова',
+      };
+      setLocError(msgs[err.code] || 'Ошибка GPS: ' + err.message);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+async function geoSuccess(pos) {
+  const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+  setGeoStatus('📡 GPS: ±' + Math.round(accuracy) + ' м · Получаем название города...');
+
+  try {
+    // Get RU and HE names in parallel, plus elevation
+    const [ruResult, heResult, alt] = await Promise.all([
+      reverseGeocode(lat, lon, 'ru').catch(() => ''),
+      reverseGeocode(lat, lon, 'he').catch(() => ''),
+      getElevation(lat, lon),
+    ]);
+
+    _pendingLoc = {
+      lat, lon, alt,
+      nameRu: ruResult || 'Неизвестно',
+      nameHe: heResult || ruResult || 'לא ידוע',
+      source: 'geo',
+    };
+    setGeoStatus('');
+    showGeoModal();
+  } catch(e) {
+    setLocError('Не удалось определить местоположение: ' + e.message);
+  }
+}
+
+function showGeoModal() {
+  if (!_pendingLoc) return;
+  const name = LANG === 'he' ? (_pendingLoc.nameHe || _pendingLoc.nameRu) : _pendingLoc.nameRu;
+  document.getElementById('modal-loc-name').textContent = name || 'Неизвестно';
+  document.getElementById('modal-loc-sub').innerHTML =
+    `📍 ${_pendingLoc.lat.toFixed(4)}, ${_pendingLoc.lon.toFixed(4)}` +
+    (_pendingLoc.alt != null ? `<br>⛰️ ${_pendingLoc.alt} м н.у.м.` : '');
+  document.getElementById('geoModal').classList.add('on');
+}
+
+function confirmGeo() {
+  if (!_pendingLoc) return;
+  S.location = { ..._pendingLoc };
+  save();
+  document.getElementById('geoModal').classList.remove('on');
+
+  const name = LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu;
+  const altStr = S.location.alt != null ? ` · ${S.location.alt} м н.у.м.` : '';
+  setGeoStatus('✅ ' + name + altStr);
+
+  const btn = document.getElementById('loc-btn');
+  if (btn) btn.innerHTML = '✅ <span>' + name + '</span>';
+
+  const ls = document.getElementById('loc-status');
+  if (ls) {
+    ls.className = 'abanner ab-info mb3';
+    ls.innerHTML = `<span class="ab-icon">✅</span><div class="ab">` +
+      `<strong>${name}</strong>` +
+      `<p>${S.location.lat.toFixed(4)}, ${S.location.lon.toFixed(4)}${altStr}</p></div>`;
+  }
+  _pendingLoc = null;
+  // If app is already running, refresh weather with new location
+  if (document.getElementById('main').style.display !== 'none') {
+    updateHeaderCity();
+    fetchWeather(true);
+  }
+}
+
+function retryGeo() {
+  document.getElementById('geoModal').classList.remove('on');
+  _pendingLoc = null;
+  reqLoc();
+}
+
+function setLocError(msg) {
+  setGeoStatus('⚠️ ' + msg);
+  const btn = document.getElementById('loc-btn');
+  if (btn) btn.innerHTML = '🔄 <span id="l-allow">Попробовать снова</span>';
+  // Show manual fallback option
+  const ls = document.getElementById('loc-status');
+  if (ls) {
+    ls.className = 'abanner ab-warning mb3';
+    ls.innerHTML = `<span class="ab-icon">⚠️</span><div class="ab">` +
+      `<strong>Не удалось определить автоматически</strong>` +
+      `<p>${msg}</p></div>`;
+  }
+}
+
+// ── APP INIT ──────────────────────────────────────────
+// FIX 3: showMain was removing class but !important on .hidden overrides inline style
+// Solution: remove both the class AND set display via style
+function showMain() {
+  const m = document.getElementById('main');
+  m.classList.remove('hidden');
+  m.style.display = 'flex';
+  initApp();
+}
+
+
+
+function updateHeaderCity() {
+  const cityEl = document.getElementById('hdr-city');
+  if (!cityEl) return;
+  const name = S.location?.nameRu
+    ? (LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu)
+    : null;
+  if (name) {
+    cityEl.innerHTML = `📍 <span style="color:var(--accent)">${name}</span>`;
+  } else {
+    cityEl.textContent = '';
+  }
+}
+
+function initApp() {
+  buildSymDomains();
+  tickTime(); setInterval(tickTime, 60000);
+  smartTrigger();
+  updateHeaderCity();
+  fetchWeather();
+  renderHome();
+  updateAnalytics();
+  genReport();
+  setInterval(() => { if (S.location) fetchWeather(true); }, 30 * 60 * 1000);
+}
+
+// ── NAVIGATION ─────────────────────────────────────────
+let curTab = 'home';
+function goTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  document.getElementById('t-' + tab).classList.add('on');
+  document.getElementById('nb-' + tab).classList.add('on');
+  curTab = tab;
+  if (tab === 'home') renderHome();
+  if (tab === 'analytics') updateAnalytics();
+  if (tab === 'report') genReport();
+  if (tab === 'entry') { smartTrigger(); tickTime(); }
+  if (tab === 'diary') {
+    document.getElementById('diary-date').textContent = new Date().toLocaleDateString(
+      LANG === 'he' ? 'he-IL' : 'ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }
+    );
+  }
+}
+
+// ── WEATHER ENGINE ────────────────────────────────────
+async function fetchWeather(force = false) {
+  if (!S.location) return;
+  const now = Date.now();
+  if (!force && now - S.lastWFetch < 30 * 60 * 1000) { renderWeather(); return; }
+  updateHeaderCity();
+  const { lat, lon } = S.location;
+  try {
+    const [meteo, kp] = await Promise.allSettled([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=pm10,pm2_5&timezone=auto&forecast_days=1`).then(r => r.json()),
+      fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json').then(r => r.json()),
+    ]);
+    const w = { ts: now };
+    if (meteo.status === 'fulfilled' && meteo.value.current) {
+      const c = meteo.value.current;
+      w.temp = c.temperature_2m; w.hum = c.relative_humidity_2m;
+      w.pres = c.surface_pressure; w.wsp = c.wind_speed_10m; w.wdir = c.wind_direction_10m;
+    }
+    if (meteo.status === 'fulfilled' && meteo.value.hourly) {
+      const h = meteo.value.hourly;
+      const i = Math.min(new Date().getHours(), (h.pm2_5 || []).length - 1);
+      w.pm25 = h.pm2_5 ? h.pm2_5[i] : null;
+      w.pm10 = h.pm10 ? h.pm10[i] : null;
+    }
+    if (kp.status === 'fulfilled' && Array.isArray(kp.value)) {
+      const last = kp.value[kp.value.length - 1];
+      w.kp = last ? parseFloat(last.kp_index) : null;
+    }
+    const recent12h = S.readings.filter(r => r.w?.pres && now - r.ts < 43200000);
+    w.dpres = recent12h.length && w.pres ? w.pres - recent12h[0].w.pres : null;
+    w.hamsin = hamsinDetect(w);
+    S.weather = w; S.lastWFetch = now; save();
+  } catch(e) { console.warn('Weather err', e); }
+  renderWeather();
+}
+
+function hamsinDetect(w) {
+  let s = 0;
+  if (w.temp >= 35) s++;
+  if (w.hum != null && w.hum < 15) s++;
+  if (w.pm10 != null && w.pm10 > 100) s++;
+  if (w.wdir >= 90 && w.wdir <= 210) s++;
+  return s >= 3;
+}
+
+function cardioRisk(w) {
+  if (!w) return null;
+  const t = w.temp ?? 20, pm = w.pm25 ?? 0, pm10 = w.pm10 ?? 0;
+  const dp = Math.abs(w.dpres ?? 0), kp = w.kp ?? 0;
+  const hamsin = w.hamsin ? 1 : pm10 > 75 ? 0.5 : 0;
+  let ts;
+  if (t < 5) ts = 1;
+  else if (t < 18) ts = 0.5 - (t - 5) / 26;
+  else if (t < 24) ts = 0;
+  else if (t < 35) ts = (t - 24) / 36;
+  else ts = Math.min(1, 0.5 + 0.05 * (t - 35));
+  const pm25s = Math.min(1, pm / 50);
+  const dps = Math.min(1, dp / 10);
+  const kps = kp / 9;
+  let wt = { t: 0.35, pm: 0.25, d: 0.20, dp: 0.12, kp: 0.08 };
+  if (S.corr) {
+    if (S.corr.tmp && Math.abs(S.corr.tmp) > 0.3) wt.t *= 1.3;
+    if (S.corr.pm && Math.abs(S.corr.pm) > 0.3) wt.pm *= 1.3;
+    const sum = Object.values(wt).reduce((a, b) => a + b, 0);
+    for (const k in wt) wt[k] = wt[k] / sum;
+  }
+  return Math.round(Math.min(100, (wt.t * ts + wt.pm * pm25s + wt.d * hamsin + wt.dp * dps + wt.kp * kps) * 100));
+}
+
+function renderWeather() {
+  const w = S.weather;
+  if (w?.temp != null) {
+    document.getElementById('hdr-temp').textContent = Math.round(w.temp) + '°';
+    document.getElementById('hdr-pm').textContent = w.pm25 ? 'PM' + Math.round(w.pm25) : '';
+  }
+  const cityBadge = document.getElementById('home-city-badge');
+  if (cityBadge && S.location) {
+    const name = LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu;
+    const alt = S.location.alt ? ` · ${S.location.alt} м` : '';
+    cityBadge.innerHTML = name ? `📍 <span style="color:var(--accent)">${name}</span>${alt}` : '';
+  }
+  const hz = document.getElementById('hamsin-z');
+  if (w?.hamsin) {
+    hz.innerHTML = `<div class="hamsin"><div class="hamsin-icon">🌪️</div><div><strong>${T('hamsin-title')}</strong><span>${T('hamsin-sub')}</span></div></div>`;
+  } else if (hz) hz.innerHTML = '';
+  const wm = document.getElementById('weather-mini');
+  if (w && wm) {
+    wm.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">
+      <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°' : '—'}</div><div class="wc-lbl">Темп.</div></div>
+      <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
+      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${w.pres ? Math.round(w.pres) : '—'}</div><div class="wc-lbl">hPa</div></div>
+      <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
+    </div>`;
+  } else if (wm) wm.innerHTML = `<div class="xs dim">${T('l-loading')}</div>`;
+  const rv = cardioRisk(w);
+  drawGauge(rv);
+}
+
+function drawGauge(val) {
+  const n = document.getElementById('gauge-n'), l = document.getElementById('gauge-l');
+  if (val === null) { if(n) n.textContent = '—'; if(l) l.textContent = ''; return; }
+  let color, lk;
+  if (val < 30) { color = '#5a8a6a'; lk = 'risk-lo'; }
+  else if (val < 60) { color = '#b07840'; lk = 'risk-mod'; }
+  else if (val < 80) { color = '#c07030'; lk = 'risk-hi'; }
+  else { color = '#a05868'; lk = 'risk-vhi'; }
+  if(n) { n.textContent = val + '%'; n.style.color = color; }
+  if(l) l.textContent = T(lk);
+  const c = document.getElementById('gauge-c');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  c.width = 120; c.height = 70;
+  ctx.clearRect(0, 0, 120, 70);
+  const [cx, cy, r] = [60, 68, 50];
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(58,48,40,.15)'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI + (val / 100) * Math.PI);
+  ctx.strokeStyle = color; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.stroke();
+}
+
+function openWeatherDetail() {
+  const w = S.weather;
+  const rv = cardioRisk(w);
+  document.getElementById('wdet-body').innerHTML = w ? `
+    ${S.location?.nameRu ? `<div style="font-size:.8rem;font-weight:600;color:var(--accent);margin-bottom:10px">${LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu}${S.location.alt ? ' · ' + S.location.alt + ' м' : ''}</div>` : ''}
+    <div class="wg mb3">
+      <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°C' : '—'}</div><div class="wc-lbl">Темп.</div></div>
+      <div class="wc"><div class="wc-icon">💧</div><div class="wc-val">${w.hum ? w.hum + '%' : '—'}</div><div class="wc-lbl">Влажн.</div></div>
+      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${w.pres ? Math.round(w.pres) : '—'}</div><div class="wc-lbl">hPa</div></div>
+      <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
+      <div class="wc"><div class="wc-icon">🏜️</div><div class="wc-val">${w.pm10 ? Math.round(w.pm10) : '—'}</div><div class="wc-lbl">PM10</div></div>
+      <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
+    </div>
+    <div class="rrow"><span class="rk">Перепад давления (12ч)</span><span class="rv">${w.dpres ? (w.dpres > 0 ? '+' : '') + w.dpres.toFixed(1) + ' hPa' : '—'}</span></div>
+    <div class="rrow"><span class="rk">Хамсин-флаг</span><span class="rv">${w.hamsin ? '🌪️ Да' : '—'}</span></div>
+    <div class="rrow"><span class="rk">cardioRiskIndex</span><span class="rv mono">${rv != null ? rv + '%' : '—'}</span></div>
+    <div class="xs dim mt2">Open-Meteo · NOAA SWPC · ${w.ts ? new Date(w.ts).toLocaleTimeString() : '—'}</div>
+  ` : `<div class="empty"><div class="empty-icon">🌍</div><p>Нет данных погоды</p></div>`;
+  openMo('wmo');
+}
+
+// ── HOME RENDER ───────────────────────────────────────
+let trendC = null;
+
+function renderHome() {
+  const rd = S.readings;
+  if (!rd.length) {
+    document.getElementById('no-data').classList.remove('hidden');
+    document.getElementById('bp-section').classList.add('hidden');
+    document.getElementById('surge-card').classList.add('hidden');
+    document.getElementById('spo2-dash').classList.add('hidden');
+    document.getElementById('trend-c').classList.add('hidden');
+    document.getElementById('recent-z').classList.add('hidden');
+    drawGauge(null);
+    return;
+  }
+  document.getElementById('no-data').classList.add('hidden');
+  document.getElementById('bp-section').classList.remove('hidden');
+
+  const last = rd[0];
+  document.getElementById('last-time').textContent = new Date(last.ts).toLocaleString(
+    LANG === 'he' ? 'he-IL' : 'ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+  );
+  const st = bpStat(last.sys, last.dia);
+  document.getElementById('last-sys').textContent = last.sys;
+  document.getElementById('last-dia').textContent = last.dia;
+  document.getElementById('last-sys').style.color = st.color;
+  document.getElementById('last-status').className = 'spill ' + st.cls;
+  document.getElementById('last-status').innerHTML = '<span class="risk-dot"></span>' + st.label;
+  document.getElementById('last-pp').textContent = last.pp;
+  document.getElementById('last-hr').textContent = last.hr || '—';
+  const trig = last.triggers?.length ? last.triggers.map(k => T('t-' + k) || k).join(', ') : '—';
+  document.getElementById('last-trig-disp').textContent = trig.substring(0, 35);
+
+  // SpO2
+  const spo2rec = rd.find(r => r.spo2);
+  if (spo2rec) {
+    document.getElementById('spo2-dash').classList.remove('hidden');
+    document.getElementById('spo2-val').textContent = spo2rec.spo2;
+    const sv = spo2rec.spo2;
+    const sc = sv >= 95 ? 'b-g' : sv >= 93 ? 'b-y' : sv >= 90 ? 'b-o' : 'b-r';
+    document.getElementById('spo2-badge').className = 'badge ' + sc;
+    document.getElementById('spo2-badge').textContent = sv >= 95 ? '✅ ' + T('spo2-ok') : sv >= 93 ? '⚠️' : sv >= 90 ? '🟠' : '🔴 ' + T('spo2-cr');
+    document.getElementById('spo2-val').style.color = sv >= 95 ? 'var(--green)' : sv >= 93 ? 'var(--orange)' : 'var(--red)';
+    document.getElementById('spo2-time').textContent = new Date(spo2rec.ts).toLocaleTimeString(
+      LANG === 'he' ? 'he-IL' : 'ru-RU', { hour: '2-digit', minute: '2-digit' }
+    );
+  }
+
+  // FIX 6: Morning surge — corrected avg7 calculation
+  const mornings = rd.filter(r => { const h = new Date(r.ts).getHours(); return h >= 5 && h < 11; });
+  const evenings = rd.filter(r => { const h = new Date(r.ts).getHours(); return h >= 18 && h < 24; });
+  if (mornings.length >= 1 && evenings.length >= 1) {
+    const surge = mornings[0].sys - evenings[0].sys;
+    document.getElementById('surge-card').classList.remove('hidden');
+    document.getElementById('surge-val').textContent = (surge > 0 ? '+' : '') + surge + ' mmHg';
+    // Correct 7-day surge avg: pair each morning with nearest preceding evening
+    const now = Date.now();
+    const rd7 = rd.filter(r => now - r.ts < 7 * 86400000);
+    const m7 = rd7.filter(r => { const h = new Date(r.ts).getHours(); return h >= 5 && h < 11; });
+    const e7 = rd7.filter(r => { const h = new Date(r.ts).getHours(); return h >= 18 && h < 24; });
+    let surges = [];
+    m7.forEach(mr => {
+      // Find the most recent evening before this morning
+      const prev = e7.find(er => er.ts < mr.ts);
+      if (prev) surges.push(mr.sys - prev.sys);
+    });
+    const avg7surge = surges.length ? Math.round(surges.reduce((a, b) => a + b, 0) / surges.length) : null;
+    document.getElementById('surge-avg').textContent = avg7surge != null ? (avg7surge > 0 ? '+' : '') + avg7surge : '—';
+    const sk = surge < 15 ? 'b-g' : surge < 20 ? 'b-y' : 'b-r';
+    document.getElementById('surge-badge').className = 'badge ' + sk;
+    document.getElementById('surge-badge').textContent = surge < 15 ? T('surge-ok') : surge < 20 ? T('surge-watch') : T('surge-hi');
+  }
+
+  // Trend chart
+  if (rd.length >= 3) {
+    document.getElementById('trend-c').classList.remove('hidden');
+    drawTrend();
+  }
+
+  // Recent list
+  document.getElementById('recent-z').classList.remove('hidden');
+  document.getElementById('recent-list').innerHTML = rd.slice(0, 5).map(r => recHTML(r)).join('');
+
+  const trendSys = rd.slice(0, 7).map(r => r.sys);
+  const avg7sys = Math.round(trendSys.reduce((a, b) => a + b, 0) / trendSys.length);
+  const trendDia = rd.slice(0, Math.min(rd.length, 7)).map(r => r.dia);
+  const avg7dia = Math.round(trendDia.reduce((a, b) => a + b, 0) / trendDia.length);
+  document.getElementById('trend-stats').textContent = `Ср. ${avg7sys}/${avg7dia}`;
+
+  renderWeather();
+}
+
+// FIX 7: bpStat — replaced || with && for h1/h2 boundary
+function bpStat(sys, dia) {
+  if (sys < 90) return { cls: 'sp-lo', label: T('st-lo'), color: 'var(--accent)' };
+  if (sys < 120 && dia < 80) return { cls: 'sp-ok', label: T('st-ok'), color: 'var(--green)' };
+  if (sys < 130 && dia < 80) return { cls: 'sp-ok', label: T('st-norm'), color: 'var(--green)' };
+  if (sys < 140 && dia < 90) return { cls: 'sp-el', label: T('st-el'), color: 'var(--orange)' };
+  if (sys < 160 && dia < 100) return { cls: 'sp-h1', label: T('st-h1'), color: 'var(--orange)' };
+  if (sys < 180 && dia < 110) return { cls: 'sp-h2', label: T('st-h2'), color: 'var(--red)' };
+  return { cls: 'sp-cr', label: T('st-cr'), color: 'var(--red)' };
+}
+
+function recHTML(r) {
+  const st = bpStat(r.sys, r.dia);
+  const cls = st.cls.replace('sp-', '');
+  const time = new Date(r.ts).toLocaleString(
+    LANG === 'he' ? 'he-IL' : 'ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+  );
+  const trig = r.triggers?.length ? r.triggers.map(k => T('t-' + k) || k).join(', ') : '—';
+  return `<div class="rec ${cls}">
+    <div>
+      <div class="rec-bp">${r.sys}/${r.dia} <span style="font-size:.65rem;color:${st.color};font-weight:600">${st.label}</span></div>
+      <div class="rec-meta">${trig.substring(0, 36)}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="rec-time">${time}</div>
+      <div class="rec-pp">PP ${r.pp}${r.hr ? ' · ' + r.hr + ' bpm' : ''}</div>
+    </div>
+  </div>`;
+}
+
+// ── TREND CHART ───────────────────────────────────────
+let chartRange = 7;
+function setRange(n) {
+  chartRange = n;
+  document.getElementById('btn-7d').className = 'btn btn-' + (n === 7 ? 'p' : 's') + ' btn-sm';
+  document.getElementById('btn-30d').className = 'btn btn-' + (n === 30 ? 'p' : 's') + ' btn-sm';
+  drawBPChart();
+}
+
+function drawTrend() {
+  const rd = S.readings.slice(0, 7).reverse();
+  const canvas = document.getElementById('trend-chart');
+  if (!canvas) return;
+  if (trendC) { trendC.destroy(); trendC = null; }
+  trendC = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: rd.map(r => new Date(r.ts).toLocaleDateString(LANG === 'he' ? 'he-IL' : 'ru-RU', { day: 'numeric', month: 'short' })),
+      datasets: [
+        { label: 'САД', data: rd.map(r => r.sys), borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 3, pointBackgroundColor: '#a05868' },
+        { label: 'ДАД', data: rd.map(r => r.dia), borderColor: '#7a8fa6', backgroundColor: 'rgba(122,143,166,.07)', tension: .4, pointRadius: 3, pointBackgroundColor: '#7a8fa6' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 10 } }, min: 60, suggestedMax: 180 }
+      }
+    }
+  });
+}
+
+let bpChart = null;
+function drawBPChart() {
+  const cutoff = Date.now() - chartRange * 86400000;
+  const rd = [...S.readings].filter(r => r.ts >= cutoff).reverse();
+  const canvas = document.getElementById('bp-chart');
+  if (!canvas) return;
+  if (bpChart) { bpChart.destroy(); bpChart = null; }
+  if (!rd.length) return;
+  bpChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: rd.map(r => new Date(r.ts).toLocaleDateString(LANG === 'he' ? 'he-IL' : 'ru-RU', { day: 'numeric', month: 'short' })),
+      datasets: [
+        { label: 'САД', data: rd.map(r => r.sys), borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 2, borderWidth: 2 },
+        { label: 'ДАД', data: rd.map(r => r.dia), borderColor: '#7a8fa6', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2 },
+        { label: 'PP', data: rd.map(r => r.pp), borderColor: '#5a8a6a', backgroundColor: 'transparent', tension: .4, pointRadius: 1, borderWidth: 1.5, borderDash: [4, 4] },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#8a7e74', boxWidth: 12, font: { size: 10 } } }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 9 }, maxRotation: 45 } },
+        y: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 10 } }, min: 50, suggestedMax: 190 }
+      }
+    }
+  });
+}
+
+// ── ENTRY FORM ────────────────────────────────────────
+let selTrigs = [], selSpo2Ts = [];
+
+function togT(chip) {
+  const k = chip.dataset.k;
+  if (selTrigs.includes(k)) { selTrigs = selTrigs.filter(x => x !== k); chip.classList.remove('on'); }
+  else { selTrigs.push(k); chip.classList.add('on'); }
+}
+function togS(chip) {
+  const s = chip.dataset.s;
+  if (selSpo2Ts.includes(s)) { selSpo2Ts = selSpo2Ts.filter(x => x !== s); chip.classList.remove('on'); }
+  else { selSpo2Ts.push(s); chip.classList.add('on'); }
+}
+function togSpO2() {
+  document.getElementById('spo2-sec').classList.toggle('hidden', !document.getElementById('spo2-tog').checked);
+}
+
+function tickTime() {
+  const el = document.getElementById('entry-time');
+  if (el) el.textContent = new Date().toLocaleTimeString(LANG === 'he' ? 'he-IL' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+function smartTrigger() {
+  const h = new Date().getHours();
+  let k = null;
+  if (h >= 5 && h < 10) k = 'mb';
+  else if (h >= 9 && h < 13) k = 'ma';
+  else if (h >= 18 && h < 24) k = 'ev';
+  else if (h >= 0 && h < 5) k = 'nw';
+  const hint = document.getElementById('smart-hint');
+  const ht = document.getElementById('smart-hint-text');
+  if (k && hint && ht) {
+    hint.classList.remove('hidden');
+    ht.textContent = T('t-' + k);
+    if (!selTrigs.length) {
+      const chip = document.querySelector(`[data-k="${k}"]`);
+      if (chip) { chip.classList.add('on'); selTrigs = [k]; }
+    }
+  }
+}
+
+function onBP() {
+  const sys = +document.getElementById('e-sys').value;
+  const dia = +document.getElementById('e-dia').value;
+  if (isNaN(sys) || isNaN(dia) || !sys || !dia) {
+    document.getElementById('pp-row').classList.add('hidden');
+    document.getElementById('e-status-z').classList.add('hidden');
+    return;
+  }
+  const pp = sys - dia;
+  document.getElementById('e-pp').textContent = pp;
+  document.getElementById('pp-row').classList.remove('hidden');
+  document.getElementById('e-status-z').classList.remove('hidden');
+  const st = bpStat(sys, dia);
+  const sp = document.getElementById('e-status-pill');
+  sp.className = 'spill ' + st.cls;
+  sp.innerHTML = '<span class="risk-dot"></span>' + st.label;
+  const pw = document.getElementById('e-pp-warn');
+  pw.classList.toggle('hidden', pp < 60);
+  if (pp >= 60) pw.textContent = T('pp-warn');
+}
+
+function onSpo2() {
+  const v = +document.getElementById('e-spo2').value;
+  const live = document.getElementById('spo2-live');
+  if (!v) { live.innerHTML = ''; return; }
+  const baseline = S.profile?.bSpo2 || 97;
+  let cls, lbl;
+  if (v >= 95) { cls = 'b-g'; lbl = T('spo2-ok'); }
+  else if (v >= 93) { cls = 'b-y'; lbl = T('spo2-lo'); }
+  else if (v >= 90) { cls = 'b-o'; lbl = T('spo2-mod'); }
+  else { cls = 'b-r'; lbl = T('spo2-cr'); }
+  let ext = '';
+  if (v <= baseline - 3) ext = `<span class="badge b-o mt1" style="display:block">↓${baseline - v}% ${T('spo2-rel')}</span>`;
+  live.innerHTML = `<span class="badge ${cls}">${v}% ${lbl}</span>${ext}`;
+}
+
+function saveBP() {
+  const sys = +document.getElementById('e-sys').value;
+  const dia = +document.getElementById('e-dia').value;
+  if (!sys || !dia || sys < 60 || sys > 280 || dia < 30 || dia > 180) {
+    const el = document.getElementById('e-sys');
+    el.style.animation = 'none'; el.offsetHeight;
+    el.style.animation = 'shakeX .4s ease';
+    return;
+  }
+  const spo2 = document.getElementById('spo2-tog').checked ? (+document.getElementById('e-spo2').value || null) : null;
+  const rec = {
+    id: Date.now(), ts: Date.now(), sys, dia,
+    hr: +document.getElementById('e-hr').value || null,
+    pp: sys - dia,
+    triggers: [...selTrigs],
+    spo2, spo2t: spo2 ? [...selSpo2Ts] : [],
+    notes: document.getElementById('e-notes').value.trim(),
+    w: S.weather ? { temp: S.weather.temp, pm25: S.weather.pm25, pm10: S.weather.pm10, pres: S.weather.pres, kp: S.weather.kp, hamsin: S.weather.hamsin } : null,
+    anxious: selTrigs.includes('jc'),
+  };
+  S.readings.unshift(rec);
+  if (S.readings.length >= 30) S.corr = computeCorr();
+  save();
+  ['e-sys', 'e-dia', 'e-hr', 'e-notes', 'e-spo2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('spo2-tog').checked = false;
+  document.getElementById('spo2-sec').classList.add('hidden');
+  document.getElementById('pp-row').classList.add('hidden');
+  document.getElementById('e-status-z').classList.add('hidden');
+  document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+  selTrigs = []; selSpo2Ts = [];
+  smartTrigger();
+  if (sys >= 180 || dia >= 120) showEmo(sys, dia);
+  else goTab('home');
+}
+
+// ── EMERGENCY ─────────────────────────────────────────
+function showEmo(sys, dia) {
+  document.getElementById('e-bp').textContent = `${sys}/${dia} mmHg`;
+  ['sx1','sx2','sx3','sx4','sx5','sx6'].forEach(id => document.getElementById(id).checked = false);
+  document.getElementById('emo').classList.add('on');
+}
+function closeEmo() { document.getElementById('emo').classList.remove('on'); goTab('home'); }
+function evalEmergency() {
+  const hasSx = ['sx1','sx2','sx3','sx4','sx5','sx6'].some(id => document.getElementById(id).checked);
+  const box = document.querySelector('.ebox');
+  if (hasSx) {
+    box.innerHTML = `<div class="eicon">🚑</div><div class="etitle" style="color:var(--high)">${T('e-amb')}</div><p class="esub">Симптомы указывают на осложнённое состояние. Немедленно вызовите скорую.</p><button class="btn btn-d" onclick="closeEmo()">Понял, вызываю</button>`;
+  } else {
+    box.innerHTML = `<div class="eicon">⚠️</div><div class="etitle" style="color:var(--orange)">${T('e-remeas')}</div><p class="esub">Симптомов нет. Лягте, 5 минут покоя, перемерьте. Если остаётся — ${T('e-doc')}.</p><button class="btn btn-s" onclick="closeEmo()">Закрыть</button>`;
+  }
+}
+
+// ── DIARY ─────────────────────────────────────────────
+const SYMS = [
+  { k: 'hd', icon: '🤕' }, { k: 'dz', icon: '💫' }, { k: 'cd', icon: '💓' }, { k: 'dy', icon: '😮‍💨' },
+  { k: 'fa', icon: '🫠' }, { k: 'vi', icon: '👁️' }, { k: 'mo', icon: '🌫️' }, { k: 'sl', icon: '😴' },
+];
+let symVals = {};
+let ctxVals = { salt: null };
+
+function buildSymDomains() {
+  const el = document.getElementById('sym-domains');
+  el.innerHTML = SYMS.map(s => `
+    <div style="margin-bottom:14px">
+      <label class="flabel">${s.icon} ${T('sym-' + s.k)} <span class="teal mono bold" id="sv-${s.k}">0</span></label>
+      <div class="nrs-wrap">
+        <input type="range" id="sl-${s.k}" min="0" max="10" value="0" oninput="updSlider(this,'sv-${s.k}');symVals['${s.k}']=+this.value">
+        <div class="nrs-labs"><span>0 нет</span><span>5</span><span>10 сильно</span></div>
+      </div>
+    </div>`).join('');
+}
+
+function updSlider(el, dispId) {
+  const v = el.value, pct = (v / 10) * 100;
+  el.style.setProperty('--pct', pct + '%');
+  const d = document.getElementById(dispId);
+  if (d) d.textContent = v;
+}
+
+function togCtx(chip, field) {
+  document.querySelectorAll(`[data-c="${field}"]`).forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+  ctxVals[field] = chip.dataset.v;
+}
+
+function saveDiary() {
+  const today = new Date().toISOString().split('T')[0];
+  const entry = {
+    date: today,
+    symptoms: { ...symVals },
+    context: {
+      salt: ctxVals.salt,
+      activity: +document.getElementById('ctx-act').value || 0,
+      stress: +document.getElementById('ctx-stress').value || 0,
+      fluids: +document.getElementById('ctx-fluids').value || 0,
+      meds: document.getElementById('ctx-meds').checked,
+    }
+  };
+  const idx = S.diary.findIndex(d => d.date === today);
+  if (idx >= 0) S.diary[idx] = entry; else S.diary.push(entry);
+  save();
+  SYMS.forEach(s => {
+    const sl = document.getElementById('sl-' + s.k);
+    if (sl) { sl.value = 0; sl.style.setProperty('--pct', '0%'); }
+    const sv = document.getElementById('sv-' + s.k);
+    if (sv) sv.textContent = '0';
+  });
+  symVals = {}; ctxVals = { salt: null };
+  const stressEl = document.getElementById('ctx-stress');
+  if (stressEl) { stressEl.value = 0; stressEl.style.setProperty('--pct', '0%'); }
+  const stressV = document.getElementById('stress-v');
+  if (stressV) stressV.textContent = '0';
+  document.querySelectorAll('[data-c]').forEach(c => c.classList.remove('on'));
+  goTab('home');
+}
+
+// ── ANALYTICS ─────────────────────────────────────────
+function updateAnalytics() {
+  const rd = S.readings;
+  if (!rd.length) { drawBPChart(); return; }
+  const avg = arr => Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+  document.getElementById('st-sys').textContent = avg(rd.map(r => r.sys));
+  document.getElementById('st-dia').textContent = avg(rd.map(r => r.dia));
+  document.getElementById('st-cnt').textContent = rd.length;
+  document.getElementById('st-pp').textContent = avg(rd.map(r => r.pp));
+  const inTarget = rd.filter(r => r.sys < 135 && r.dia < 85).length;
+  document.getElementById('st-pct').textContent = Math.round((inTarget / rd.length) * 100) + '%';
+  const days = new Set(rd.map(r => new Date(r.ts).toDateString())).size;
+  document.getElementById('st-days').textContent = days;
+  document.getElementById('all-list').innerHTML = rd.map(r => recHTML(r)).join('');
+  if (rd.length >= 30 && S.corr) {
+    renderCorr();
+  } else {
+    document.getElementById('corr-status').textContent = `${rd.length}/30`;
+  }
+  drawBPChart();
+}
+
+// ── SPEARMAN CORRELATIONS ─────────────────────────────
+function spearman(x, y) {
+  const n = x.length;
+  if (n < 10) return null;
+  const rank = arr => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    return arr.map(v => sorted.indexOf(v) + 1);
+  };
+  const rx = rank(x), ry = rank(y);
+  const d2 = rx.map((v, i) => (v - ry[i]) ** 2).reduce((a, b) => a + b, 0);
+  return 1 - (6 * d2) / (n * (n * n - 1));
+}
+
+function computeCorr() {
+  const rd = S.readings.filter(r => r.w);
+  if (rd.length < 15) return null;
+  const sys = rd.map(r => r.sys), dia = rd.map(r => r.dia);
+  const valid = (arr, tgt) => {
+    const pairs = arr.map((v, i) => [v, tgt[i]]).filter(p => p[0] != null && p[1] != null);
+    return { x: pairs.map(p => p[0]), y: pairs.map(p => p[1]) };
+  };
+  const c = {};
+  const temp = rd.map(r => r.w?.temp ?? null);
+  const pm25 = rd.map(r => r.w?.pm25 ?? null);
+  const pm10 = rd.map(r => r.w?.pm10 ?? null);
+  const kp = rd.map(r => r.w?.kp ?? null);
+  const vt = valid(temp, sys); if (vt.x.length >= 10) c.tmp = spearman(vt.x, vt.y);
+  const vp = valid(pm25, sys); if (vp.x.length >= 10) c.pm = spearman(vp.x, vp.y);
+  const vpm = valid(pm10, sys); if (vpm.x.length >= 10) c.pm10 = spearman(vpm.x, vpm.y);
+  const vk = valid(kp, dia); if (vk.x.length >= 10) c.kp = spearman(vk.x, vk.y);
+  return c;
+}
+
+function renderCorr() {
+  const c = S.corr; if (!c) return;
+  const items = [
+    { k: 'tmp', ev: 'ev-g' }, { k: 'pm', ev: 'ev-g' },
+    { k: 'pm10', ev: 'ev-g' }, { k: 'kp', ev: 'ev-b' },
+  ].filter(it => c[it.k] != null);
+  if (!items.length) return;
+  const corrLegend = {
+    tmp: [T('corr-tmp'), 'Spearman ρ, ESH 2023'],
+    pm: [T('corr-pm'), 'PM2.5 μg/m³'],
+    pm10: [T('corr-pm10'), 'PM10 μg/m³'],
+    kp: [T('corr-kp'), 'геомагнитная буря'],
+  };
+  document.getElementById('corr-list').innerHTML = items.map(it => {
+    const rho = c[it.k]; const abs = Math.abs(rho); const insig = abs < 0.15;
+    const pct = Math.round(abs * 50);
+    const isPos = rho >= 0;
+    const fillCls = (insig ? 'insig ' : '') + (isPos ? 'pos' : 'neg');
+    const numColor = insig ? 'var(--dim)' : isPos ? 'var(--low)' : 'var(--high)';
+    const [lbl, sub] = corrLegend[it.k] || [it.k, ''];
+    return `<div class="ci">
+      <div class="ci-lbl">${lbl}<small>${sub} <span class="ev ${it.ev}">${it.ev === 'ev-g' ? '★' : '○'}</span></small></div>
+      <div class="ci-bar"><div class="ci-fill ${fillCls}" style="width:${pct}%"></div></div>
+      <div class="ci-num" style="color:${numColor}">${rho >= 0 ? '+' : ''}${rho.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('corr-status').textContent = `n=${S.readings.filter(r => r.w).length}`;
+}
+
+// ── REPORT ─────────────────────────────────────────────
+let repFmt = 'esh';
+function setRepFmt(f) {
+  repFmt = f;
+  document.getElementById('btn-esh').className = 'btn btn-' + (f === 'esh' ? 'p' : 's') + ' btn-sm';
+  document.getElementById('btn-gp').className = 'btn btn-' + (f === 'gp' ? 'p' : 's') + ' btn-sm';
+  genReport();
+}
+
+function genReport() {
+  const repDate = document.getElementById('rep-date');
+  if (repDate) repDate.textContent = new Date().toLocaleDateString(LANG === 'he' ? 'he-IL' : 'ru-RU');
+  const rd = S.readings;
+  if (!rd.length) return;
+  const days = new Set(rd.map(r => new Date(r.ts).toDateString())).size;
+  if (days < 7) return;
+  document.getElementById('rep-actions').classList.remove('hidden');
+  const sys7 = rd.filter(r => Date.now() - r.ts < 7 * 86400000);
+  const avg = (arr, fn) => arr.length ? Math.round(arr.reduce((a, b) => a + fn(b), 0) / arr.length) : '—';
+  const aSys7 = avg(sys7, r => r.sys);
+  const aDia7 = avg(sys7, r => r.dia);
+  const aPP7 = avg(sys7, r => r.pp);
+  const aSys30 = avg(rd.slice(0, Math.min(rd.length, 100)), r => r.sys);
+  const aDia30 = avg(rd.slice(0, Math.min(rd.length, 100)), r => r.dia);
+  const pctOk = Math.round((rd.filter(r => r.sys < 135 && r.dia < 85).length / rd.length) * 100);
+  const pct180 = Math.round((rd.filter(r => r.sys >= 180 || r.dia >= 120).length / rd.length) * 100);
+  const anxious = rd.filter(r => r.anxious).length;
+  const mornings = rd.filter(r => { const h = new Date(r.ts).getHours(); return h >= 5 && h < 11; });
+  const evenings = rd.filter(r => { const h = new Date(r.ts).getHours(); return h >= 18 && h < 24; });
+  const surge = mornings.length && evenings.length ? mornings[0].sys - evenings[0].sys : null;
+  const highPP = rd.filter(r => r.pp >= 60).length;
+  const p = S.profile;
+  let html = '';
+  if (repFmt === 'esh') {
+    html = `
+    <div class="rsection">
+      <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">ESH/ESC Format · Home BP Monitoring</div><div class="s-line"></div></div>
+      <div class="rrow"><span class="rk">Период</span><span class="rv">${days} дней (n=${rd.length})</span></div>
+      <div class="rrow"><span class="rk">Диагноз / группа</span><span class="rv">${(p?.diagnoses || []).join(', ') || '—'}</span></div>
+      <div class="rrow"><span class="rk">Целевое АД</span><span class="rv">${p?.tSys || '—'}/${p?.tDia || '—'} mmHg</span></div>
+      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).join(', ') || '—'}</span></div>
+    </div>
+    <div class="rsection">
+      <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Показатели HBPM</div><div class="s-line"></div></div>
+      <div class="rrow"><span class="rk">Ср. АД (7 дней)</span><span class="rv">${aSys7}/${aDia7} mmHg</span></div>
+      <div class="rrow"><span class="rk">Ср. АД (весь период)</span><span class="rv">${aSys30}/${aDia30} mmHg</span></div>
+      <div class="rrow"><span class="rk">Ср. пульсовое давление</span><span class="rv">${aPP7} mmHg ${aPP7 >= 60 ? '⚠️ ≥60' : ''}</span></div>
+      <div class="rrow"><span class="rk">Утренний подъём</span><span class="rv">${surge != null ? (surge > 0 ? '+' : '') + surge + ' mmHg' + (surge >= 20 ? ' ⚠️' : '') : '—'}</span></div>
+      <div class="rrow"><span class="rk">% измерений в целевом диапазоне (&lt;135/85)</span><span class="rv">${pctOk}%</span></div>
+      <div class="rrow"><span class="rk">% измерений ≥180/120</span><span class="rv">${pct180}%</span></div>
+      <div class="rrow"><span class="rk">Измерений с PP≥60</span><span class="rv">${highPP} (${Math.round(highPP / rd.length * 100)}%)</span></div>
+    </div>
+    <div class="rsection">
+      <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Погодные ассоциации</div><div class="s-line"></div></div>
+      ${S.corr ? Object.entries(S.corr).map(([k, v]) => `<div class="rrow"><span class="rk">${T('corr-' + k)}</span><span class="rv">ρ=${v.toFixed(2)}</span></div>`).join('') : '<div class="rrow"><span class="rk dim">Недостаточно данных (нужно ≥30 измерений с геолокацией)</span></div>'}
+    </div>
+    ${anxious ? `<div class="rsection"><div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Тревожные измерения</div><div class="s-line"></div></div><div class="rrow"><span class="rk">Измерений "на всякий случай"</span><span class="rv">${anxious}</span></div></div>` : ''}
+    <div class="xs dim mt2">КардиоПогода · ${new Date().toLocaleDateString()}</div>`;
+  } else {
+    html = `
+    <div class="rsection">
+      <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">Отчёт по давлению</div><div class="s-line"></div></div>
+      <div class="rrow"><span class="rk">Период наблюдения</span><span class="rv">${days} дней, ${rd.length} измерений</span></div>
+      <div class="rrow"><span class="rk">Среднее давление за неделю</span><span class="rv">${aSys7}/${aDia7}</span></div>
+      <div class="rrow"><span class="rk">В норме (менее 135/85)</span><span class="rv">${pctOk}%</span></div>
+      <div class="rrow"><span class="rk">Утренний подъём</span><span class="rv">${surge != null ? surge + ' мм рт.ст.' : '—'} ${surge >= 20 ? '⚠️ повышен' : ''}</span></div>
+      ${aPP7 >= 60 ? `<div class="rrow"><span class="rk">⚠️ Пульсовое давление</span><span class="rv">${aPP7} мм рт.ст. — повышено</span></div>` : ''}
+      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).join(', ') || '—'}</span></div>
+    </div>
+    <div class="xs dim mt2">КардиоПогода · ${new Date().toLocaleDateString()}</div>`;
+  }
+  document.getElementById('rep-body').innerHTML = html;
+}
+
+function copyRep() {
+  const text = document.getElementById('rep-body').innerText;
+  navigator.clipboard?.writeText(text).then(() => alert('Скопировано')).catch(() => alert('Скопируйте текст вручную'));
+}
+function shareRep() {
+  const text = document.getElementById('rep-body').innerText;
+  if (navigator.share) navigator.share({ title: 'КардиоПогода — отчёт', text });
+  else copyRep();
+}
+
+// ── MODAL ──────────────────────────────────────────────
+function openMo(id) { document.getElementById(id).classList.add('on'); }
+function closeMo(id) { document.getElementById(id).classList.remove('on'); }
+
+// ── CLEAR DATA ─────────────────────────────────────────
+function confirmClear() {
+  if (confirm('Удалить все записи? Это действие необратимо.')) {
+    S.readings = []; S.diary = []; S.corr = null; save();
+    renderHome(); updateAnalytics(); genReport();
+  }
+}
+
+// ── BOOT ───────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  load();
+  if (S.profile) {
+    document.getElementById('onb').style.display = 'none';
+    showMain();
+  } else {
+    document.getElementById('onb').style.display = 'flex';
+    updOnbUI();
+  }
+  document.querySelectorAll('.mo').forEach(m => m.addEventListener('click', e => {
+    if (e.target === m) m.classList.remove('on');
+  }));
+});
+</script>
+</body>
+</html>
