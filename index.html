@@ -2009,22 +2009,52 @@ function drawBPChart() {
   if (!canvas) return;
   if (bpChart) { bpChart.destroy(); bpChart = null; }
   if (!rd.length) return;
+
+  // Aggregate by date
+  const byDate = {};
+  rd.forEach(r => {
+    const key = new Date(r.ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    if (!byDate[key]) byDate[key] = { sys: [], dia: [], pp: [], temp: [], pres: [] };
+    byDate[key].sys.push(r.sys);
+    byDate[key].dia.push(r.dia);
+    byDate[key].pp.push(r.pp);
+    if (r.w?.temp != null) byDate[key].temp.push(r.w.temp);
+    if (r.w?.pres != null) byDate[key].pres.push(hpaToMmhg(r.w.pres));
+  });
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : null;
+  const avgF = (arr, dec) => arr.length ? parseFloat((arr.reduce((a,b) => a+b, 0) / arr.length).toFixed(dec)) : null;
+
+  const labels = Object.keys(byDate);
+  const sysData  = labels.map(k => avg(byDate[k].sys));
+  const diaData  = labels.map(k => avg(byDate[k].dia));
+  const ppData   = labels.map(k => avg(byDate[k].pp));
+  const tempData = labels.map(k => avgF(byDate[k].temp, 1));
+  const presData = labels.map(k => avg(byDate[k].pres));
+
+  const hasTemp = tempData.some(v => v != null);
+  const hasPres = presData.some(v => v != null);
+
+  const datasets = [
+    { label: 'САД', data: sysData, borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 2, borderWidth: 2, yAxisID: 'y' },
+    { label: 'ДАД', data: diaData, borderColor: '#7a8fa6', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2, yAxisID: 'y' },
+    { label: 'PP',  data: ppData,  borderColor: '#5a8a6a', backgroundColor: 'transparent', tension: .4, pointRadius: 1, borderWidth: 1.5, borderDash: [4,4], yAxisID: 'y' },
+  ];
+  if (hasTemp) datasets.push({ label: 'Темп.°C', data: tempData, borderColor: '#c07030', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 1.5, borderDash: [2,3], yAxisID: 'y2' });
+  if (hasPres) datasets.push({ label: 'Давл.мм', data: presData, borderColor: '#7a6a9a', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 1.5, borderDash: [2,3], yAxisID: 'y2' });
+
   bpChart = new Chart(canvas, {
     type: 'line',
-    data: {
-      labels: rd.map(r => new Date(r.ts).toLocaleDateString(LANG === 'he' ? 'he-IL' : 'ru-RU', { day: 'numeric', month: 'short' })),
-      datasets: [
-        { label: 'САД', data: rd.map(r => r.sys), borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 2, borderWidth: 2 },
-        { label: 'ДАД', data: rd.map(r => r.dia), borderColor: '#7a8fa6', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2 },
-        { label: 'PP', data: rd.map(r => r.pp), borderColor: '#5a8a6a', backgroundColor: 'transparent', tension: .4, pointRadius: 1, borderWidth: 1.5, borderDash: [4, 4] },
-      ]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#8a7e74', boxWidth: 12, font: { size: 10 } } }, tooltip: { mode: 'index', intersect: false } },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8a7e74', boxWidth: 12, font: { size: 10 } } },
+        tooltip: { mode: 'index', intersect: false }
+      },
       scales: {
         x: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 9 }, maxRotation: 45 } },
-        y: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 10 } }, min: 50, suggestedMax: 190 }
+        y: { position: 'left', grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 10 } }, min: 50, suggestedMax: 190, title: { display: true, text: 'мм рт.ст.', color: '#8a7e74', font: { size: 9 } } },
+        y2: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#8a7e74', font: { size: 9 } }, title: { display: true, text: '°C / мм', color: '#8a7e74', font: { size: 9 } } },
       }
     }
   });
@@ -2379,11 +2409,15 @@ function computeCorr() {
   const temp = rd.map(r => r.w?.temp ?? null);
   const pm25 = rd.map(r => r.w?.pm25 ?? null);
   const pm10 = rd.map(r => r.w?.pm10 ?? null);
-  const kp = rd.map(r => r.w?.kp ?? null);
-  const vt = valid(temp, sys); if (vt.x.length >= 10) c.tmp = spearman(vt.x, vt.y);
-  const vp = valid(pm25, sys); if (vp.x.length >= 10) c.pm = spearman(vp.x, vp.y);
-  const vpm = valid(pm10, sys); if (vpm.x.length >= 10) c.pm10 = spearman(vpm.x, vpm.y);
-  const vk = valid(kp, dia); if (vk.x.length >= 10) c.kp = spearman(vk.x, vk.y);
+  const kp   = rd.map(r => r.w?.kp ?? null);
+  const dpres = rd.map(r => r.w?.dpres ?? null);
+  const hum  = rd.map(r => r.w?.hum ?? null);
+  const vt  = valid(temp,  sys); if (vt.x.length  >= 10) c.tmp  = spearman(vt.x,  vt.y);
+  const vp  = valid(pm25,  sys); if (vp.x.length  >= 10) c.pm   = spearman(vp.x,  vp.y);
+  const vpm = valid(pm10,  sys); if (vpm.x.length >= 10) c.pm10 = spearman(vpm.x, vpm.y);
+  const vk  = valid(kp,    dia); if (vk.x.length  >= 10) c.kp   = spearman(vk.x,  vk.y);
+  const vdp = valid(dpres, sys); if (vdp.x.length >= 10) c.dp   = spearman(vdp.x, vdp.y);
+  const vh  = valid(hum,   sys); if (vh.x.length  >= 10) c.hum  = spearman(vh.x,  vh.y);
   return c;
 }
 
@@ -2392,13 +2426,16 @@ function renderCorr() {
   const items = [
     { k: 'tmp', ev: 'ev-g' }, { k: 'pm', ev: 'ev-g' },
     { k: 'pm10', ev: 'ev-g' }, { k: 'kp', ev: 'ev-b' },
+    { k: 'dp', ev: 'ev-y' }, { k: 'hum', ev: 'ev-y' },
   ].filter(it => c[it.k] != null);
   if (!items.length) return;
   const corrLegend = {
-    tmp: [T('corr-tmp'), 'Spearman ρ, ESH 2023'],
-    pm: [T('corr-pm'), 'PM2.5 μg/m³'],
+    tmp:  [T('corr-tmp'),  'Spearman ρ, ESH 2023'],
+    pm:   [T('corr-pm'),   'PM2.5 μg/m³'],
     pm10: [T('corr-pm10'), 'PM10 μg/m³'],
-    kp: [T('corr-kp'), 'геомагнитная буря'],
+    kp:   [T('corr-kp'),   'геомагнитная буря'],
+    dp:   [T('corr-dp'),   'перепад за 12ч, hPa'],
+    hum:  ['Влажность ↔ САД', 'относит. влажность %'],
   };
   document.getElementById('corr-list').innerHTML = items.map(it => {
     const rho = c[it.k]; const abs = Math.abs(rho); const insig = abs < 0.15;
