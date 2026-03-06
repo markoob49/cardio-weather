@@ -873,8 +873,8 @@
             <button class="btn btn-s btn-sm" id="btn-30d" onclick="setRange(30)" style="width:auto">30д</button>
           </div>
         </div>
-        <div class="ch-wrap" style="height:130px"><canvas id="bp-chart"></canvas></div>
-        <div class="ch-wrap" style="height:100px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><canvas id="weather-chart"></canvas></div>
+        <div class="ch-wrap" style="height:180px"><canvas id="bp-chart"></canvas></div>
+        <div class="ch-wrap" style="height:140px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><canvas id="weather-chart"></canvas></div>
       </div>
       <div class="card">
         <div class="c-hdr">
@@ -2054,7 +2054,7 @@ function drawBPChart() {
       plugins: { legend: { position: 'bottom', labels: { color: '#8a7e74', boxWidth: 10, font: { size: 9 } } }, tooltip: tooltipCfg },
       scales: {
         x: { ...xCfg, ticks: { ...xCfg.ticks, display: !hasWeather } },
-        y: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 9 } }, min: 50, suggestedMax: 190,
+        y: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 9 } }, suggestedMin: 50, suggestedMax: 190,
              title: { display: true, text: 'мм рт.ст.', color: '#8a7e74', font: { size: 8 } } }
       }
     }
