@@ -290,6 +290,10 @@
   .rec-meta { font-size: .62rem; color: var(--muted); margin-top: 2px; }
   .rec-time { font-size: .65rem; font-weight: 400; text-align: right; color: var(--muted); }
   .rec-pp { font-size: .6rem; color: var(--dim); text-align: right; }
+  .rec-delta { display:none; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); grid-column:1/-1; font-size:.65rem; color:var(--muted); display:none; flex-wrap:wrap; gap:6px 12px; }
+  .rec.open .rec-delta { display:flex; }
+  .rd { display:flex; align-items:center; gap:3px; }
+  .rd-up { color:var(--high); } .rd-dn { color:var(--low); } .rd-eq { color:var(--dim); }
 
   .sgg { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
   .sg {
@@ -671,14 +675,22 @@
           <button id="btn-now" class="btn btn-p btn-sm" onclick="setEntryMode('now')" style="flex:1;width:auto">🕐 Сейчас</button>
           <button id="btn-back" class="btn btn-s btn-sm" onclick="setEntryMode('back')" style="flex:1;width:auto">📅 Задним числом</button>
         </div>
-        <div id="backdate-row" class="hidden mb3" style="display:none;gap:8px;align-items:center">
-          <div class="f1">
-            <label class="flabel">Дата</label>
-            <input type="date" id="back-date" class="fi" style="font-size:.8rem">
+        <div id="backdate-row" class="hidden mb3" style="display:none;gap:6px;align-items:flex-end">
+          <div style="width:64px">
+            <label class="flabel">День</label>
+            <select id="back-day" class="fi" style="font-size:.8rem;padding:7px 6px"></select>
+          </div>
+          <div style="width:100px">
+            <label class="flabel">Месяц</label>
+            <select id="back-month" class="fi" style="font-size:.8rem;padding:7px 6px"></select>
+          </div>
+          <div style="width:80px">
+            <label class="flabel">Год</label>
+            <select id="back-year" class="fi" style="font-size:.8rem;padding:7px 6px"></select>
           </div>
           <div style="width:80px">
             <label class="flabel">Час</label>
-            <select id="back-hour" class="fi" style="font-size:.8rem;padding:7px 8px"></select>
+            <select id="back-hour" class="fi" style="font-size:.8rem;padding:7px 6px"></select>
           </div>
         </div>
         <div id="smart-hint" class="abanner ab-info mb2 hidden">
@@ -1865,7 +1877,7 @@ function renderHome() {
 
   // Recent list
   document.getElementById('recent-z').classList.remove('hidden');
-  document.getElementById('recent-list').innerHTML = rd.slice(0, 5).map(r => recHTML(r)).join('');
+  document.getElementById('recent-list').innerHTML = rd.slice(0, 5).map((r, i) => recHTML(r, rd[i+1])).join('');
 
   const trendSys = rd.slice(0, 7).map(r => r.sys);
   const avg7sys = Math.round(trendSys.reduce((a, b) => a + b, 0) / trendSys.length);
@@ -1887,14 +1899,52 @@ function bpStat(sys, dia) {
   return { cls: 'sp-cr', label: T('st-cr'), color: 'var(--red)' };
 }
 
-function recHTML(r) {
+function recHTML(r, prev) {
   const st = bpStat(r.sys, r.dia);
   const cls = st.cls.replace('sp-', '');
   const time = new Date(r.ts).toLocaleString(
     LANG === 'he' ? 'he-IL' : 'ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
   );
   const trig = r.triggers?.length ? r.triggers.map(k => T('t-' + k) || k).join(', ') : '—';
-  return `<div class="rec ${cls}">
+
+  // Delta block
+  let deltaHTML = '';
+  if (prev) {
+    const fmt = (val, unit, invert) => {
+      if (val == null) return null;
+      const sign = val > 0 ? '+' : '';
+      const cls2 = Math.abs(val) < 1 ? 'rd-eq' : (val > 0) === !invert ? 'rd-up' : 'rd-dn';
+      return `<span class="rd ${cls2}">${sign}${val}${unit}</span>`;
+    };
+    const d = (a, b) => (a != null && b != null) ? Math.round(a - b) : null;
+    const df = (a, b, dec) => (a != null && b != null) ? parseFloat((a - b).toFixed(dec)) : null;
+
+    const dSys = d(r.sys, prev.sys);
+    const dDia = d(r.dia, prev.dia);
+    const dHr  = d(r.hr, prev.hr);
+    const dTemp = df(r.w?.temp, prev.w?.temp, 1);
+    const dPres = d(hpaToMmhg(r.w?.pres), hpaToMmhg(prev.w?.pres));
+    const dPm  = d(r.w?.pm25, prev.w?.pm25);
+    const mins = Math.round((r.ts - prev.ts) / 60000);
+    const timeDiff = mins < 60
+      ? `${mins} мин`
+      : mins < 1440
+        ? `${Math.round(mins/60)} ч`
+        : `${Math.round(mins/1440)} д`;
+
+    const parts = [
+      dSys != null && dDia != null ? `<span class="rd" style="color:var(--muted)">АД</span>${fmt(dSys,'')} / ${fmt(dDia,'')} <span class="rd-eq">мм</span>` : null,
+      dHr != null ? `<span class="rd" style="color:var(--muted)">ЧСС</span>${fmt(dHr,' уд')}` : null,
+      dTemp != null ? `<span class="rd" style="color:var(--muted)">Темп.</span>${fmt(dTemp,'°', true)}` : null,
+      dPres != null ? `<span class="rd" style="color:var(--muted)">Давл.</span>${fmt(dPres,' мм')}` : null,
+      dPm != null ? `<span class="rd" style="color:var(--muted)">PM2.5</span>${fmt(dPm,'')}` : null,
+      `<span class="rd rd-eq">⏱ ${timeDiff} назад</span>`,
+    ].filter(Boolean);
+
+    deltaHTML = `<div class="rec-delta">${parts.join('')}</div>`;
+  }
+
+  return `<div class="rec ${cls}" onclick="this.classList.toggle('open')" style="cursor:pointer;display:grid;grid-template-columns:1fr auto">
     <div>
       <div class="rec-bp">${r.sys}/${r.dia} <span style="font-size:.65rem;color:${st.color};font-weight:600">${st.label}</span></div>
       <div class="rec-meta">${trig.substring(0, 36)}</div>
@@ -1903,6 +1953,16 @@ function recHTML(r) {
       <div class="rec-time">${time}${r.backdated ? ' 📅' : ''}</div>
       <div class="rec-pp">PP ${r.pp}${r.hr ? ' · ' + r.hr + ' bpm' : ''}${r.notes ? '<br><span style="font-size:.58rem;color:var(--dim)">' + sanitize(r.notes) + '</span>' : ''}</div>
     </div>
+    ${deltaHTML}
+    ${r.w ? `<div class="rec-delta" style="border-top:${deltaHTML ? '0' : '1px solid var(--border)'};padding-top:${deltaHTML ? '0' : '8px'};margin-top:${deltaHTML ? '0' : '8px'}">
+      <span class="rd rd-eq">🌡️ ${r.w.temp != null ? Math.round(r.w.temp)+'°C' : '—'}</span>
+      <span class="rd rd-eq">💧 ${r.w.hum != null ? r.w.hum+'%' : '—'}</span>
+      <span class="rd rd-eq">⬆️ ${hpaToMmhg(r.w.pres) ?? '—'} мм</span>
+      ${r.w.pm25 != null ? `<span class="rd rd-eq">🌫️ PM2.5 ${Math.round(r.w.pm25)}</span>` : ''}
+      ${r.w.kp != null ? `<span class="rd rd-eq">⚡ Kp ${r.w.kp.toFixed(1)}</span>` : ''}
+      ${r.w.hamsin ? `<span class="rd rd-up">🌪️ Хамсин</span>` : ''}
+      ${r.w.historical ? `<span class="rd rd-eq" style="font-size:.58rem">📦 архив</span>` : ''}
+    </div>` : ''}
   </div>`;
 }
 
@@ -2059,15 +2119,41 @@ function setEntryMode(mode) {
     row.classList.remove('hidden');
     btnNow.className = 'btn btn-s btn-sm'; btnNow.style.flex = '1'; btnNow.style.width = 'auto';
     btnBack.className = 'btn btn-p btn-sm'; btnBack.style.flex = '1'; btnBack.style.width = 'auto';
-    // Set default: today, current hour
+    // Populate selects
     const now = new Date();
-    const dateEl = document.getElementById('back-date');
-    const maxDate = now.toISOString().split('T')[0];
-    const minDate = new Date(now - 30 * 86400000).toISOString().split('T')[0];
-    dateEl.max = maxDate; dateEl.min = minDate;
-    if (!dateEl.value) dateEl.value = maxDate;
-    // Populate hours if empty
+    const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const minDate = new Date(now - 30 * 86400000);
+
+    const dayEl = document.getElementById('back-day');
+    const monEl = document.getElementById('back-month');
+    const yearEl = document.getElementById('back-year');
     const hourEl = document.getElementById('back-hour');
+
+    // Year
+    yearEl.innerHTML = '';
+    const yrs = new Set([minDate.getFullYear(), now.getFullYear()]);
+    yrs.forEach(y => yearEl.add(new Option(y, y)));
+    yearEl.value = now.getFullYear();
+
+    // Month
+    monEl.innerHTML = '';
+    for (let m = 0; m < 12; m++) monEl.add(new Option(MONTHS[m], m));
+    monEl.value = now.getMonth();
+
+    // Day
+    function fillDays() {
+      const y = parseInt(yearEl.value), m = parseInt(monEl.value);
+      const daysInMonth = new Date(y, m+1, 0).getDate();
+      const cur = parseInt(dayEl.value) || now.getDate();
+      dayEl.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) dayEl.add(new Option(d, d));
+      dayEl.value = Math.min(cur, daysInMonth);
+    }
+    fillDays();
+    dayEl.value = now.getDate();
+    monEl.onchange = yearEl.onchange = fillDays;
+
+    // Hours
     if (!hourEl.options.length) {
       for (let h = 0; h < 24; h++) hourEl.add(new Option(h.toString().padStart(2,'0') + ':00', h));
     }
@@ -2115,12 +2201,14 @@ async function saveBP() {
   // Determine timestamp and weather
   let ts, weatherData;
   if (_entryMode === 'back') {
-    const dateStr = document.getElementById('back-date').value;
-    const hour = parseInt(document.getElementById('back-hour').value);
-    if (!dateStr) { alert('Укажите дату'); return; }
-    const d = new Date(dateStr);
-    d.setHours(hour, 0, 0, 0);
+    const day   = parseInt(document.getElementById('back-day').value);
+    const month = parseInt(document.getElementById('back-month').value);
+    const year  = parseInt(document.getElementById('back-year').value);
+    const hour  = parseInt(document.getElementById('back-hour').value);
+    if (!day || isNaN(month) || !year) { alert('Укажите дату'); return; }
+    const d = new Date(year, month, day, hour, 0, 0, 0);
     ts = d.getTime();
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     // Show loading indicator
     const saveBtn = document.querySelector('[onclick="saveBP()"]');
     if (saveBtn) saveBtn.textContent = '⏳ Загружаем погоду...';
@@ -2255,7 +2343,7 @@ function updateAnalytics() {
   document.getElementById('st-pct').textContent = Math.round((inTarget / rd.length) * 100) + '%';
   const days = new Set(rd.map(r => new Date(r.ts).toDateString())).size;
   document.getElementById('st-days').textContent = days;
-  document.getElementById('all-list').innerHTML = rd.map(r => recHTML(r)).join('');
+  document.getElementById('all-list').innerHTML = rd.map((r, i) => recHTML(r, rd[i+1])).join('');
   if (rd.length >= 30 && S.corr) {
     renderCorr();
   } else {
