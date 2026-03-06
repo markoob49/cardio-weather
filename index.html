@@ -359,6 +359,8 @@
   .dc:active { transform:scale(.97); }
 
   .mo { position:fixed; inset:0; background:rgba(58,48,40,.4); backdrop-filter:blur(4px); z-index:100; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .25s; }
+  #disclaimer-mo { position:fixed; inset:0; background:rgba(20,16,12,.85); backdrop-filter:blur(6px); z-index:600; display:flex; align-items:center; justify-content:center; padding:20px; }
+  #disclaimer-mo.hidden { display:none; }
   .mo.on { opacity:1; pointer-events:all; }
   .ms {
     background:var(--surface); border-radius:var(--r3) var(--r3) 0 0; width:100%;
@@ -1184,6 +1186,36 @@ let S = {
   lastWFetch: 0,
 };
 
+function sanitize(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function showDisclaimer() {
+  const mo = document.getElementById('disclaimer-mo');
+  mo.classList.remove('hidden');
+  // Show Hebrew block if lang is he
+  if (LANG === 'he') {
+    document.getElementById('disc-he').style.display = 'block';
+    document.getElementById('disc-title').textContent = 'הצהרת אחריות רפואית';
+    document.getElementById('disc-btn').textContent = '✓ הבנתי ומקבל';
+  }
+}
+
+function acceptDisclaimer() {
+  try { localStorage.setItem('cw_disclaimer', '1'); } catch(e) {}
+  document.getElementById('disclaimer-mo').classList.add('hidden');
+}
+
+function checkDisclaimer() {
+  try { return localStorage.getItem('cw_disclaimer') === '1'; } catch(e) { return false; }
+}
+
 function load() {
   try { const d = localStorage.getItem('cw_v1'); if (d) S = {...S, ...JSON.parse(d)}; } catch(e){}
   if (!S.readings) S.readings = [];
@@ -1869,7 +1901,7 @@ function recHTML(r) {
     </div>
     <div style="text-align:right">
       <div class="rec-time">${time}${r.backdated ? ' 📅' : ''}</div>
-      <div class="rec-pp">PP ${r.pp}${r.hr ? ' · ' + r.hr + ' bpm' : ''}</div>
+      <div class="rec-pp">PP ${r.pp}${r.hr ? ' · ' + r.hr + ' bpm' : ''}${r.notes ? '<br><span style="font-size:.58rem;color:var(--dim)">' + sanitize(r.notes) + '</span>' : ''}</div>
     </div>
   </div>`;
 }
@@ -2332,9 +2364,9 @@ function genReport() {
     <div class="rsection">
       <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">ESH/ESC Format · Home BP Monitoring</div><div class="s-line"></div></div>
       <div class="rrow"><span class="rk">Период</span><span class="rv">${days} дней (n=${rd.length})</span></div>
-      <div class="rrow"><span class="rk">Диагноз / группа</span><span class="rv">${(p?.diagnoses || []).join(', ') || '—'}</span></div>
+      <div class="rrow"><span class="rk">Диагноз / группа</span><span class="rv">${(p?.diagnoses || []).map(sanitize).join(', ') || '—'}</span></div>
       <div class="rrow"><span class="rk">Целевое АД</span><span class="rv">${p?.tSys || '—'}/${p?.tDia || '—'} mmHg</span></div>
-      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).join(', ') || '—'}</span></div>
+      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).map(sanitize).join(', ') || '—'}</span></div>
     </div>
     <div class="rsection">
       <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Показатели HBPM</div><div class="s-line"></div></div>
@@ -2361,7 +2393,7 @@ function genReport() {
       <div class="rrow"><span class="rk">В норме (менее 135/85)</span><span class="rv">${pctOk}%</span></div>
       <div class="rrow"><span class="rk">Утренний подъём</span><span class="rv">${surge != null ? surge + ' мм рт.ст.' : '—'} ${surge >= 20 ? '⚠️ повышен' : ''}</span></div>
       ${aPP7 >= 60 ? `<div class="rrow"><span class="rk">⚠️ Пульсовое давление</span><span class="rv">${aPP7} мм рт.ст. — повышено</span></div>` : ''}
-      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).join(', ') || '—'}</span></div>
+      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).map(sanitize).join(', ') || '—'}</span></div>
     </div>
     <div class="xs dim mt2">КардиоПогода · ${new Date().toLocaleDateString()}</div>`;
   }
@@ -2400,10 +2432,32 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('onb').style.display = 'flex';
     updOnbUI();
   }
+  if (!checkDisclaimer()) showDisclaimer();
   document.querySelectorAll('.mo').forEach(m => m.addEventListener('click', e => {
     if (e.target === m) m.classList.remove('on');
   }));
 });
 </script>
+<!-- DISCLAIMER MODAL -->
+<div id="disclaimer-mo" class="hidden">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);width:100%;max-width:440px;padding:24px 20px;box-shadow:0 8px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+    <div style="font-size:1.5rem;text-align:center;margin-bottom:10px">⚕️</div>
+    <div style="font-size:.85rem;font-weight:600;color:var(--text);text-align:center;margin-bottom:16px" id="disc-title">Медицинский дисклеймер</div>
+    <div style="font-size:.72rem;color:var(--muted);line-height:1.7" id="disc-body">
+      <p style="margin-bottom:10px">Это приложение является <strong style="color:var(--text)">персональным инструментом самомониторинга</strong> и не является медицинским устройством, не сертифицировано и не предназначено для постановки диагноза или лечения.</p>
+      <p style="margin-bottom:10px">Данные, отображаемые в приложении, носят <strong style="color:var(--text)">исключительно информационный характер</strong> и не могут заменить консультацию, обследование или рекомендации врача.</p>
+      <p style="margin-bottom:10px">При любом ухудшении самочувствия, резком изменении показателей или тревожных симптомах — <strong style="color:var(--high)">немедленно обратитесь к врачу или вызовите скорую помощь (101)</strong>.</p>
+      <p style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">Продолжая использование приложения, вы подтверждаете, что понимаете и принимаете условия данного дисклеймера.</p>
+      <div id="disc-he" style="display:none;direction:rtl;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <p style="margin-bottom:8px">אפליקציה זו היא <strong style="color:var(--text)">כלי מעקב אישי</strong> ואינה מכשיר רפואי מאושר ואינה מיועדת לאבחון או טיפול.</p>
+        <p style="margin-bottom:8px">הנתונים המוצגים הם <strong style="color:var(--text)">למטרות מידע בלבד</strong> ואינם מחליפים ייעוץ רפואי.</p>
+        <p>במקרה של הרעה במצב הבריאותי — <strong style="color:var(--high)">פנה לרופא או התקשר לאמבולנס (101)</strong>.</p>
+      </div>
+    </div>
+    <button class="btn btn-p mt3" onclick="acceptDisclaimer()" style="width:100%;font-size:.8rem" id="disc-btn">✓ Понимаю и принимаю</button>
+    <div style="font-size:.6rem;color:var(--dim);text-align:center;margin-top:8px" id="disc-ver">КардиоПогода · Только для личного использования</div>
+  </div>
+</div>
+
 </body>
 </html>
