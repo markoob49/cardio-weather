@@ -1231,6 +1231,7 @@ function checkDisclaimer() {
 function load() {
   try { const d = localStorage.getItem('cw_v1'); if (d) S = {...S, ...JSON.parse(d)}; } catch(e){}
   if (!S.readings) S.readings = [];
+  S.readings.sort((a, b) => b.ts - a.ts);
   if (!S.diary) S.diary = [];
 }
 
@@ -1925,12 +1926,12 @@ function recHTML(r, prev) {
     const dTemp = df(r.w?.temp, prev.w?.temp, 1);
     const dPres = d(hpaToMmhg(r.w?.pres), hpaToMmhg(prev.w?.pres));
     const dPm  = d(r.w?.pm25, prev.w?.pm25);
-    const mins = Math.round((r.ts - prev.ts) / 60000);
+    const mins = Math.floor((r.ts - prev.ts) / 60000);
     const timeDiff = mins < 60
       ? `${mins} мин`
       : mins < 1440
-        ? `${Math.round(mins/60)} ч`
-        : `${Math.round(mins/1440)} д`;
+        ? `${Math.floor(mins/60)} ч ${mins%60 ? (mins%60)+' мин' : ''}`
+        : `${Math.floor(mins/1440)} д ${Math.floor((mins%1440)/60) ? Math.floor((mins%1440)/60)+' ч' : ''}`;
 
     const parts = [
       dSys != null && dDia != null ? `<span class="rd" style="color:var(--muted)">АД</span>${fmt(dSys,'')} / ${fmt(dDia,'')} <span class="rd-eq">мм</span>` : null,
@@ -2234,6 +2235,7 @@ async function saveBP() {
     backdated: _entryMode === 'back',
   };
   S.readings.unshift(rec);
+  S.readings.sort((a, b) => b.ts - a.ts);
   if (S.readings.length >= 30) S.corr = computeCorr();
   save();
   ['e-sys', 'e-dia', 'e-hr', 'e-notes', 'e-spo2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
