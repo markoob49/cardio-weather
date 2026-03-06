@@ -664,6 +664,21 @@
           <span class="c-title" id="l-bp-entry">Измерение АД</span>
           <span class="xs dim" id="entry-time">—</span>
         </div>
+        <!-- Backdated entry toggle -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button id="btn-now" class="btn btn-p btn-sm" onclick="setEntryMode('now')" style="flex:1;width:auto">🕐 Сейчас</button>
+          <button id="btn-back" class="btn btn-s btn-sm" onclick="setEntryMode('back')" style="flex:1;width:auto">📅 Задним числом</button>
+        </div>
+        <div id="backdate-row" class="hidden mb3" style="display:none;gap:8px;align-items:center">
+          <div class="f1">
+            <label class="flabel">Дата</label>
+            <input type="date" id="back-date" class="fi" style="font-size:.8rem">
+          </div>
+          <div style="width:80px">
+            <label class="flabel">Час</label>
+            <select id="back-hour" class="fi" style="font-size:.8rem;padding:7px 8px"></select>
+          </div>
+        </div>
         <div id="smart-hint" class="abanner ab-info mb2 hidden">
           <span class="ab-icon">💡</span>
           <div class="ab"><strong id="smart-hint-text">—</strong><p id="l-smart-sub">Определён по времени. Можно изменить.</p></div>
@@ -1853,7 +1868,7 @@ function recHTML(r) {
       <div class="rec-meta">${trig.substring(0, 36)}</div>
     </div>
     <div style="text-align:right">
-      <div class="rec-time">${time}</div>
+      <div class="rec-time">${time}${r.backdated ? ' 📅' : ''}</div>
       <div class="rec-pp">PP ${r.pp}${r.hr ? ' · ' + r.hr + ' bpm' : ''}</div>
     </div>
   </div>`;
@@ -1999,7 +2014,63 @@ function onSpo2() {
   live.innerHTML = `<span class="badge ${cls}">${v}% ${lbl}</span>${ext}`;
 }
 
-function saveBP() {
+// ── BACKDATED ENTRY ───────────────────────────────────
+let _entryMode = 'now';
+
+function setEntryMode(mode) {
+  _entryMode = mode;
+  const row = document.getElementById('backdate-row');
+  const btnNow = document.getElementById('btn-now');
+  const btnBack = document.getElementById('btn-back');
+  if (mode === 'back') {
+    row.style.display = 'flex';
+    row.classList.remove('hidden');
+    btnNow.className = 'btn btn-s btn-sm'; btnNow.style.flex = '1'; btnNow.style.width = 'auto';
+    btnBack.className = 'btn btn-p btn-sm'; btnBack.style.flex = '1'; btnBack.style.width = 'auto';
+    // Set default: today, current hour
+    const now = new Date();
+    const dateEl = document.getElementById('back-date');
+    const maxDate = now.toISOString().split('T')[0];
+    const minDate = new Date(now - 30 * 86400000).toISOString().split('T')[0];
+    dateEl.max = maxDate; dateEl.min = minDate;
+    if (!dateEl.value) dateEl.value = maxDate;
+    // Populate hours if empty
+    const hourEl = document.getElementById('back-hour');
+    if (!hourEl.options.length) {
+      for (let h = 0; h < 24; h++) hourEl.add(new Option(h.toString().padStart(2,'0') + ':00', h));
+    }
+    hourEl.value = now.getHours();
+  } else {
+    row.style.display = 'none';
+    btnNow.className = 'btn btn-p btn-sm'; btnNow.style.flex = '1'; btnNow.style.width = 'auto';
+    btnBack.className = 'btn btn-s btn-sm'; btnBack.style.flex = '1'; btnBack.style.width = 'auto';
+  }
+}
+
+async function fetchHistoricalWeather(lat, lon, dateStr, hour) {
+  try {
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}` +
+      `&start_date=${dateStr}&end_date=${dateStr}` +
+      `&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m` +
+      `&timezone=auto&format=json`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (!d.hourly) return null;
+    const h = d.hourly;
+    return {
+      temp: h.temperature_2m?.[hour] ?? null,
+      hum: h.relative_humidity_2m?.[hour] ?? null,
+      pres: h.surface_pressure?.[hour] ?? null,
+      wsp: h.wind_speed_10m?.[hour] ?? null,
+      wdir: h.wind_direction_10m?.[hour] ?? null,
+      pm25: null, pm10: null, kp: null, // not available in archive
+      dpres: null, hamsin: false,
+      historical: true,
+    };
+  } catch(e) { return null; }
+}
+
+async function saveBP() {
   const sys = +document.getElementById('e-sys').value;
   const dia = +document.getElementById('e-dia').value;
   if (!sys || !dia || sys < 60 || sys > 280 || dia < 30 || dia > 180) {
@@ -2008,16 +2079,39 @@ function saveBP() {
     el.style.animation = 'shakeX .4s ease';
     return;
   }
+
+  // Determine timestamp and weather
+  let ts, weatherData;
+  if (_entryMode === 'back') {
+    const dateStr = document.getElementById('back-date').value;
+    const hour = parseInt(document.getElementById('back-hour').value);
+    if (!dateStr) { alert('Укажите дату'); return; }
+    const d = new Date(dateStr);
+    d.setHours(hour, 0, 0, 0);
+    ts = d.getTime();
+    // Show loading indicator
+    const saveBtn = document.querySelector('[onclick="saveBP()"]');
+    if (saveBtn) saveBtn.textContent = '⏳ Загружаем погоду...';
+    weatherData = S.location
+      ? await fetchHistoricalWeather(S.location.lat, S.location.lon, dateStr, hour)
+      : null;
+    if (saveBtn) saveBtn.innerHTML = '💾 <span id="l-save">Сохранить измерение</span>';
+  } else {
+    ts = Date.now();
+    weatherData = S.weather ? { temp: S.weather.temp, pm25: S.weather.pm25, pm10: S.weather.pm10, pres: S.weather.pres, kp: S.weather.kp, hamsin: S.weather.hamsin } : null;
+  }
+
   const spo2 = document.getElementById('spo2-tog').checked ? (+document.getElementById('e-spo2').value || null) : null;
   const rec = {
-    id: Date.now(), ts: Date.now(), sys, dia,
+    id: Date.now(), ts, sys, dia,
     hr: +document.getElementById('e-hr').value || null,
     pp: sys - dia,
     triggers: [...selTrigs],
     spo2, spo2t: spo2 ? [...selSpo2Ts] : [],
     notes: document.getElementById('e-notes').value.trim(),
-    w: S.weather ? { temp: S.weather.temp, pm25: S.weather.pm25, pm10: S.weather.pm10, pres: S.weather.pres, kp: S.weather.kp, hamsin: S.weather.hamsin } : null,
+    w: weatherData,
     anxious: selTrigs.includes('jc'),
+    backdated: _entryMode === 'back',
   };
   S.readings.unshift(rec);
   if (S.readings.length >= 30) S.corr = computeCorr();
@@ -2029,6 +2123,7 @@ function saveBP() {
   document.getElementById('e-status-z').classList.add('hidden');
   document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
   selTrigs = []; selSpo2Ts = [];
+  setEntryMode('now');
   smartTrigger();
   if (sys >= 180 || dia >= 120) showEmo(sys, dia);
   else goTab('home');
