@@ -42,4 +42,5 @@
 
 [GNU GPL v3.0](LICENSE) — код открыт, производные работы должны распространяться под той же лицензией.
 
-© 2026 Mark BORENSON markoob49@gmail.com 
+© 2026 Mark BORENSON mark.oob.thinking@gmail.com
+
