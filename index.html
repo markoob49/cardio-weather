@@ -98,12 +98,13 @@
   #hdr-temp { color: var(--mod); font-weight: 600; }
   #hdr-pm { color: var(--muted); font-size: .65rem; }
 
-  #lang-toggle {
+  .lp-btn {
     background: none; border: 1px solid var(--border); color: var(--muted);
-    border-radius: 4px; padding: 4px 10px; font-size: .7rem; font-weight: 400;
-    cursor: pointer; font-family: var(--mono); transition: var(--t); letter-spacing: .05em;
+    border-radius: 4px; padding: 3px 7px; font-size: .65rem; font-weight: 400;
+    cursor: pointer; font-family: var(--mono); transition: var(--t);
   }
-  #lang-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .lp-btn.lp-act { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .lp-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   #scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 68px; }
 
@@ -533,6 +534,13 @@
         <div class="step-t" id="o-t5">Всё готово!</div>
         <div class="step-s" id="o-s5">Начните с первого измерения. Персональная аналитика появится после 30+ записей.</div>
         <div id="os5-location" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-glow);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-size:.72rem;color:var(--muted);margin-top:8px"></div>
+        <div id="onb-datefmt" style="display:none;margin-top:14px;text-align:center">
+          <div class="xs dim mb2">Date format:</div>
+          <div class="flex g2" style="justify-content:center">
+            <button id="onb-fmt-us" class="btn btn-p btn-sm" onclick="setDateFmtOnb('us')">MM/DD/YYYY</button>
+            <button id="onb-fmt-eu" class="btn btn-s btn-sm" onclick="setDateFmtOnb('eu')">DD/MM/YYYY</button>
+          </div>
+        </div>
         <div class="card mt3" style="text-align:left">
           <div class="xs dim mb2" id="l-steps">Первые шаги:</div>
           <div class="flex ia g2 mb2"><span>1️⃣</span><span class="sm" id="l-st1">Утром, до лекарств — измерьте АД дважды</span></div>
@@ -565,7 +573,12 @@
         <span id="hdr-pm">PM—</span>
       </div>
       <button id="loc-refresh" title="Изменить город" onclick="openCityModal()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:4px 8px;font-size:.75rem;cursor:pointer;transition:var(--t)" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">📍</button>
-      <button id="lang-toggle" onclick="cycleLang()">HE</button>
+      <div id="lang-picker" style="display:flex;gap:2px;align-items:center">
+        <button onclick="setLang('ru')" id="lp-ru" class="lp-btn lp-act">RU</button>
+        <button onclick="setLang('he')" id="lp-he" class="lp-btn">HE</button>
+        <button onclick="setLang('en')" id="lp-en" class="lp-btn">EN</button>
+      </div>
+      <button id="datefmt-btn" onclick="toggleDateFmt()" title="Toggle date format" style="display:none;background:none;border:1px solid var(--border);border-radius:4px;font-size:.65rem;color:var(--muted);padding:3px 7px;cursor:pointer;font-family:var(--mono)">MM/DD</button>
     </div>
   </div>
 
@@ -1006,6 +1019,98 @@
 
 // ── I18N ──────────────────────────────────────────────
 const I18N = {
+  en:{
+    'o-sub':'Blood pressure monitoring with weather analytics','o-t1':'Your Profile',
+    'o-s1':'Select one or more groups — this will configure thresholds and analytics',
+    'd-htn':'Hypertension','d-htn-d':'Elevated BP, on medication',
+    'd-pots-d':'Orthostatic tachycardia, dysautonomia',
+    'd-meta':'Metabolic syndrome','d-meta-d':'Diabetes, obesity, dyslipidemia',
+    'd-elder':'Older age','d-elder-d':'Isolated systolic hypertension',
+    'o-t2':'BP Target Values','o-s2':'Enter values from your doctor. If unsure — leave defaults.',
+    'l-tsys':'Systolic target','l-tdia':'Diastolic target',
+    'l-esh-hint':'ESH 2023 target: <130/80; HBPM hypertension threshold: ≥135/85',
+    'l-baseline':'your baseline','l-spo2hint':'To track relative drop ≥3%',
+    'o-t3':'Current Medications','o-s3':'Optional. Displayed in doctor report.',
+    'l-addmed':'Add medication','l-before':'Measurements before morning meds','l-before-h':'Recommended ESH 2023',
+    'o-t4':'Weather Data','o-s4':'The app collects temperature, PM2.5, PM10, pressure and Kp-index.',
+    'l-auto':'Automatic collection','l-loc-need':'Location access required','l-loc-sub':'Determine your city and altitude above sea level',
+    'l-allow':'Detect my location',
+    'l-hamsin':'Heat wave detector','l-hamsin-d':'Automatically identifies high-risk days and alerts you',
+    'o-t5':'All set!','o-s5':'Start with your first measurement. Personal analytics — after 30+ readings.',
+    'l-steps':'First steps:','l-st1':'Morning, before meds — measure twice',
+    'l-st2':'Mark the measurement trigger','l-st3':'Evening — repeat',
+    'l-back':'Back','l-next':'Next →','l-done':'Start →',
+    'l-last-reading':'Last reading','l-no-data':'No data.\nAdd your first BP measurement.',
+    'l-add-first':'Add','l-risk':'Cardio risk','l-weather':'Weather','l-loading':'Loading...',
+    'l-surge':'Morning surge','l-surge-h':'morning − evening (yesterday)','l-surge-avg':'7-day avg.',
+    'l-trend':'BP Trend (7 days)','l-recent':'Recent entries','l-see-all':'All records →',
+    'l-bp-entry':'BP Measurement','l-smart-sub':'Detected by time. Can be changed.',
+    'l-sys':'Systolic','l-dia':'Diastolic','l-upper':'upper','l-lower':'lower',
+    'l-pp':'Pulse pressure','l-hr':'Heart rate (bpm)','l-notes':'Notes','l-opt':'optional',
+    'l-why':'Why did you measure?','l-trig-hint':'💡 Helps identify your personal BP triggers',
+    'l-ca':'A — Scheduled','l-cb':'B — Symptoms','l-cc':'C — Context','l-cd':'D — Weather','l-ce':'E — No trigger',
+    't-mb':'Morning before meds','t-ma':'Morning after meds','t-ev':'Evening','t-re':'By reminder',
+    't-hd':'Headache','t-dz':'Dizziness','t-pal':'Palpitations','t-dys':'Shortness of breath',
+    't-ch':'Chest pain','t-vis':'Visual disturbance','t-wk':'Weakness','t-tin':'Tinnitus','t-num':'Numbness',
+    't-ex':'After exercise','t-st':'After stress','t-ml':'After meal','t-cf':'After coffee',
+    't-nw':'After night waking','t-am':'After medication','t-rs':'After rest',
+    't-al':'By app alert','t-ht':'In heat','t-sn':'After sun exposure',
+    't-ok':'Routine — all good','t-jc':'Just checking',
+    'l-save':'Save measurement','l-spo2-trig':'SpO₂ measurement reason',
+    'st-no':'No reason','st-dy':'Shortness of breath','st-ch':'Chest discomfort','st-pl':'Palpitations',
+    'st-dz':'Dizziness','st-wk':'Weakness','st-ex':'After exercise','st-ht':'In heat','st-nw':'Night waking',
+    'l-diary':'Symptom diary','l-diary-sub':'Rate how you feel. Data is used in correlation analysis.',
+    'l-ctx-title':'Daily context','l-salt':'Salt today','l-s-lo':'Low','l-s-me':'Medium','l-s-hi':'High',
+    'l-act':'Physical activity','l-stress':'Stress','l-fluids':'Fluids','l-pots-f':'important in POTS',
+    'l-meds':'Medications taken','l-save-d':'Save diary',
+    'l-my-stats':'My Statistics','l-st-sys':'Avg. SBP','l-st-dia':'Avg. DBP','l-st-cnt':'Readings',
+    'l-st-pp':'Avg. PP','l-st-pct':'In range %','l-st-days':'Days',
+    'l-bp-time':'BP over time','l-my-trig':'My weather triggers','l-corr-empty':'Appears after 30+ readings',
+    'l-ev-legend':'<span class="ev ev-g">★</span> strong evidence &nbsp;<span class="ev ev-y">◆</span> moderate &nbsp;<span class="ev ev-b">○</span> experimental',
+    'l-all-rec':'All records','l-clear':'Clear','l-no-rec':'No records',
+    'l-rep-title':'Doctor Report','l-rep-sub':'Generated:',
+    'l-rep-empty':'At least 7 days of measurements required','l-copy':'Copy','l-share':'Share',
+    'rep-esh-btn':'ESH (cardiologist)','rep-gp-btn':'Family doctor',
+    'rep-esh-title':'ESH/ESC Format · Home BP Monitoring',
+    'rep-s-profile':'Patient profile','rep-s-hbpm':'HBPM Metrics',
+    'rep-s-weather':'Meteorological associations','rep-s-anxious':'Anxious measurements',
+    'rep-s-bp':'BP Report',
+    'rep-period':'Period','rep-diag':'Diagnosis / group','rep-target':'BP target','rep-meds':'Medications',
+    'rep-avg7':'Avg. BP (7 days)','rep-avgall':'Avg. BP (full period)',
+    'rep-pp':'Avg. pulse pressure','rep-surge':'Morning surge',
+    'rep-pct-ok':'% readings in target range (<135/85)',
+    'rep-pct-cr':'% readings ≥180/120','rep-highpp':'Readings with PP≥60',
+    'rep-no-corr':'Insufficient data (need ≥30 readings with location)',
+    'rep-anxious-lbl':'"Just checking" readings',
+    'rep-obs-period':'Observation period','rep-avg-week':'Weekly average BP',
+    'rep-in-range':'In range (below 135/85)','rep-surge-hi':'elevated',
+    'rep-pp-high':'Pulse pressure','rep-pp-high-val':'mmHg — elevated',
+    'rep-footer':'CardioWeather','rep-days':'days','rep-readings':'readings',
+    'rep-copied':'Copied','rep-copy-manual':'Please copy the text manually',
+    'disc-ver':'CardioWeather · Personal use only',
+    'e-title':'Very high blood pressure','e-q':'Are there any symptoms right now?',
+    'sx-hd':'Severe headache','sx-ch':'Chest pain','sx-dy':'Shortness of breath',
+    'sx-vi':'Visual disturbance','sx-sp':'Speech difficulty / arm weakness','sx-cn':'Confusion',
+    'e-check':'Check — what to do?','e-close':'Close',
+    'l-wdet':'Weather data','l-close':'Close',
+    'l-nb-home':'Home','l-nb-entry':'Entry','l-nb-diary':'Diary','l-nb-an':'Analysis','l-nb-rep':'Report',
+    'st-ok':'Optimal','st-norm':'Normal','st-el':'Elevated','st-h1':'Hypertension Gr.1','st-h2':'Hypertension Gr.2',
+    'st-cr':'Hypertensive crisis','st-lo':'Low',
+    'risk-lo':'Low','risk-mod':'Moderate','risk-hi':'Elevated','risk-vhi':'High',
+    'surge-ok':'Normal','surge-watch':'Watch','surge-hi':'High',
+    'pp-ok':'Normal','pp-w':'Watch','pp-hi':'Elevated',
+    'spo2-ok':'Normal','spo2-lo':'Below normal','spo2-mod':'Moderate','spo2-cr':'Critical','spo2-rel':'↓ from baseline',
+    'hamsin-title':'Heat Wave Alert','hamsin-sub':'Elevated risk: measure more often, drink water.',
+    'sym-hd':'Headache','sym-dz':'Dizziness / orthostatic','sym-cd':'Cardiac symptoms',
+    'sym-dy':'Shortness of breath / exertion','sym-fa':'Fatigue / weakness','sym-vi':'Visual disturbances',
+    'sym-mo':'Mood / brain fog','sym-sl':'Sleep quality',
+    'corr-tmp':'Temperature ↔ SBP','corr-pm':'PM2.5 ↔ SBP','corr-pm10':'PM10 ↔ SBP',
+    'corr-dp':'Pressure change ↔ SBP','corr-kp':'Kp-index ↔ DBP','corr-surge':'Temperature ↔ Surge',
+    'pp-warn':'⚠️ Elevated pulse pressure',
+    'e-amb':'🚑 CALL EMERGENCY SERVICES','e-doc':'See a doctor today','e-remeas':'Re-measure after 5 min rest',
+    'l-geo-confirm':'Your location','l-yes-correct':'Yes, correct','l-retry':'Retry',
+    'l-loc-sub':'We will detect your city and altitude',
+  },
   ru:{
     'o-sub':'Мониторинг АД с погодной аналитикой','o-t1':'Ваш профиль',
     'o-s1':'Выберите одну или несколько групп — это настроит пороги и аналитику',
@@ -1192,8 +1297,33 @@ const I18N = {
   }
 };
 
-let LANG = 'ru';
-function T(k) { return I18N[LANG][k] || I18N.ru[k] || k; }
+// ── LANGUAGE INIT ─────────────────────────────────────
+function detectLang() {
+  const saved = localStorage.getItem('cw_lang');
+  if (saved && I18N[saved]) return saved;
+  const nav = (navigator.languages || [navigator.language]).map(l => l.slice(0,2));
+  if (nav.includes('he')) return 'he';
+  if (nav.includes('ru')) return 'ru';
+  if (nav.includes('en')) return 'en';
+  return 'ru';
+}
+let LANG = 'ru'; // will be set in DOMContentLoaded
+function T(k) { return (I18N[LANG]?.[k]) || I18N.ru[k] || k; }
+// Inline tri-lingual helper for dynamic JS strings not in I18N
+function tl(ru, he, en) { return LANG === 'he' ? he : LANG === 'en' ? en : ru; }
+// Locale string for Intl APIs
+function locale() {
+  if (LANG === 'he') return 'he-IL';
+  if (LANG === 'en') return S.dateFmt === 'eu' ? 'en-GB' : 'en-US';
+  return 'ru-RU';
+}
+// Get location display name for current language
+function locName(loc) {
+  if (!loc) return '';
+  if (LANG === 'he') return loc.nameHe || loc.nameRu || '';
+  if (LANG === 'en') return loc.nameEn || loc.nameRu || '';
+  return loc.nameRu || '';
+}
 
 function applyLang() {
   document.documentElement.lang = LANG;
@@ -1207,16 +1337,28 @@ function applyLang() {
   const gpSpan  = document.getElementById('l-rep-gp-btn');
   if (eshSpan) eshSpan.textContent = T('rep-esh-btn');
   if (gpSpan)  gpSpan.textContent  = T('rep-gp-btn');
-  document.getElementById('lang-toggle').textContent = LANG === 'ru' ? 'HE' : 'RU';
+  // Update lang picker active state
+  ['ru','he','en'].forEach(l => {
+    const b = document.getElementById('lp-' + l);
+    if (b) b.className = 'lp-btn' + (l === LANG ? ' lp-act' : '');
+  });
+  // Show date format button only for EN
+  const dfBtn = document.getElementById('datefmt-btn');
+  if (dfBtn) dfBtn.style.display = LANG === 'en' ? '' : 'none';
+  // App title per language
   const htitle = document.getElementById('hdr-title');
   if (htitle) {
+    const citySpan = '<span id="hdr-city" style="font-family:var(--mono);font-style:normal;font-size:.65rem;color:var(--muted);font-weight:300;margin-left:6px"></span>';
     if (LANG === 'he') {
-      htitle.innerHTML = '❤️‍🩺 קרדיו<em>מזג אוויר</em> <span id="hdr-city" style="font-family:var(--mono);font-style:normal;font-size:.65rem;color:var(--muted);font-weight:300;margin-left:6px"></span>';
+      htitle.innerHTML = '❤️‍🩺 קרדיו<em>מזג אוויר</em> ' + citySpan;
+    } else if (LANG === 'en') {
+      htitle.innerHTML = '❤️‍🩺 Cardio<em>Weather</em> ' + citySpan;
     } else {
-      htitle.innerHTML = '❤️‍🩺 Кардио<em>Погода</em> <span id="hdr-city" style="font-family:var(--mono);font-style:normal;font-size:.65rem;color:var(--muted);font-weight:300;margin-left:6px"></span>';
+      htitle.innerHTML = '❤️‍🩺 Кардио<em>Погода</em> ' + citySpan;
     }
   }
   updateHeaderCity();
+  updateDateFmtUI();
   if (document.getElementById('main').style.display !== 'none') {
     if (trendC) { trendC.destroy(); trendC = null; }
     if (bpChart) { bpChart.destroy(); bpChart = null; }
@@ -1224,9 +1366,42 @@ function applyLang() {
   }
 }
 
-function cycleLang() {
-  LANG = LANG === 'ru' ? 'he' : 'ru';
+function setLang(lang) {
+  if (!I18N[lang]) return;
+  LANG = lang;
+  try { localStorage.setItem('cw_lang', LANG); } catch(e) {}
   applyLang();
+}
+function cycleLang() { // legacy — kept for any bookmarked calls
+  setLang(LANG === 'ru' ? 'he' : LANG === 'he' ? 'en' : 'ru');
+}
+
+// ── DATE FORMAT ────────────────────────────────────────
+function toggleDateFmt() {
+  S.dateFmt = S.dateFmt === 'eu' ? 'us' : 'eu';
+  save();
+  updateDateFmtUI();
+  if (document.getElementById('main').style.display !== 'none') {
+    renderHome(); updateAnalytics(); genReport();
+  }
+}
+function updateDateFmtUI() {
+  const btn = document.getElementById('datefmt-btn');
+  if (btn) {
+    btn.style.display = LANG === 'en' ? '' : 'none';
+    btn.textContent = S.dateFmt === 'eu' ? 'DD/MM' : 'MM/DD';
+  }
+  const onbFmt = document.getElementById('onb-datefmt');
+  if (onbFmt) onbFmt.style.display = LANG === 'en' ? 'block' : 'none';
+  const us = document.getElementById('onb-fmt-us');
+  const eu = document.getElementById('onb-fmt-eu');
+  if (us && eu) {
+    us.className = S.dateFmt === 'us' ? 'btn btn-p btn-sm' : 'btn btn-s btn-sm';
+    eu.className = S.dateFmt === 'eu' ? 'btn btn-p btn-sm' : 'btn btn-s btn-sm';
+  }
+}
+function setDateFmtOnb(fmt) {
+  S.dateFmt = fmt; save(); updateDateFmtUI();
 }
 
 // ── STATE ─────────────────────────────────────────────
@@ -1238,6 +1413,7 @@ let S = {
   diary: [],
   corr: null,
   lastWFetch: 0,
+  dateFmt: 'us',
 };
 
 function sanitize(str) {
@@ -1254,23 +1430,24 @@ function showDisclaimer() {
   const mo = document.getElementById('disclaimer-mo');
   mo.classList.remove('hidden');
   const firstRun = !S.profile;
+  // On first run user hasn't chosen a language yet — show all three
+  document.getElementById('disc-ru').style.display = (firstRun || LANG === 'ru') ? 'block' : 'none';
+  document.getElementById('disc-he').style.display = (firstRun || LANG === 'he') ? 'block' : 'none';
+  document.getElementById('disc-en').style.display = (firstRun || LANG === 'en') ? 'block' : 'none';
   if (firstRun) {
-    // Both languages visible — defaults already set in HTML
-    document.getElementById('disc-ru').style.display = 'block';
-    document.getElementById('disc-he').style.display = 'block';
+    document.getElementById('disc-title').textContent = 'Медицинский дисклеймер · Medical Disclaimer · הצהרת אחריות רפואית';
+    document.getElementById('disc-btn').textContent = '✓ Понимаю · I accept · הבנתי';
   } else if (LANG === 'he') {
-    document.getElementById('disc-ru').style.display = 'none';
-    document.getElementById('disc-he').style.display = 'block';
     document.getElementById('disc-title').textContent = 'הצהרת אחריות רפואית';
     document.getElementById('disc-btn').textContent = '✓ הבנתי ומקבל';
-    document.getElementById('disc-ver').textContent = T('disc-ver');
+  } else if (LANG === 'en') {
+    document.getElementById('disc-title').textContent = 'Medical Disclaimer';
+    document.getElementById('disc-btn').textContent = '✓ I understand and accept';
   } else {
-    document.getElementById('disc-ru').style.display = 'block';
-    document.getElementById('disc-he').style.display = 'none';
     document.getElementById('disc-title').textContent = 'Медицинский дисклеймер';
     document.getElementById('disc-btn').textContent = '✓ Понимаю и принимаю';
-    document.getElementById('disc-ver').textContent = T('disc-ver');
   }
+  document.getElementById('disc-ver').textContent = T('disc-ver');
 }
 
 function acceptDisclaimer() {
@@ -1340,9 +1517,9 @@ function updOnbUI() {
   // Show location summary on step 5
   if (onbN === 5) {
     const loc5 = document.getElementById('os5-location');
-    if (loc5 && S.location?.nameRu) {
-      loc5.textContent = '📍 ' + (LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu)
-        + (S.location.alt ? ' · ' + S.location.alt + ' м н.у.м.' : '');
+    if (loc5 && (S.location?.nameRu || S.location?.nameEn)) {
+      loc5.textContent = '📍 ' + locName(S.location)
+        + (S.location.alt ? ' · ' + S.location.alt + ' ' + tl('м н.у.м.', 'מ׳ מ.פ.י.', 'm a.s.l.') : '');
     }
   }
 }
@@ -1408,7 +1585,7 @@ function _citySearch(val, suggestionsId, isModal) {
   box.style.display = 'block';
   _citySearchTimer = setTimeout(async () => {
     try {
-      const lang = LANG === 'he' ? 'he' : 'ru';
+      const lang = LANG === 'he' ? 'he' : LANG === 'en' ? 'en' : 'ru';
       const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=6&language=${lang}&format=json`);
       const d = await r.json();
       if (!d.results?.length) {
@@ -1436,20 +1613,22 @@ function _citySearch(val, suggestionsId, isModal) {
 }
 
 function _applyCity(c) {
+  const nameBase = [c.name, c.country].filter(Boolean).join(', ');
   _pendingLoc = {
     lat: c.latitude, lon: c.longitude,
     alt: c.elevation != null ? Math.round(c.elevation) : null,
-    nameRu: [c.name, c.country].filter(Boolean).join(', '),
-    nameHe: [c.name, c.country].filter(Boolean).join(', '),
+    nameRu: nameBase, nameHe: nameBase, nameEn: nameBase,
     source: 'manual',
   };
-  // Try to get localized names
+  // Try to get localized names for all three languages
   Promise.all([
     reverseGeocode(c.latitude, c.longitude, 'ru').catch(() => null),
     reverseGeocode(c.latitude, c.longitude, 'he').catch(() => null),
-  ]).then(([ru, he]) => {
+    reverseGeocode(c.latitude, c.longitude, 'en').catch(() => null),
+  ]).then(([ru, he, en]) => {
     if (ru) _pendingLoc.nameRu = ru;
     if (he) _pendingLoc.nameHe = he;
+    if (en) _pendingLoc.nameEn = en;
   });
   showGeoModal();
 }
@@ -1525,7 +1704,7 @@ function reverseGeocode(lat, lon, lang) {
       if (!settled) {
         const ok = results.find(r => r.status === 'fulfilled' && r.value);
         if (ok) resolve(ok.value);
-        else reject(new Error('Не удалось определить город'));
+        else reject(new Error(tl('Не удалось определить город','לא ניתן לקבוע את העיר','Could not determine city')));
       }
     });
   });
@@ -1564,7 +1743,7 @@ function reqLoc() {
         2: 'Координаты недоступны — проверьте, что службы геолокации включены',
         3: 'Таймаут GPS — попробуйте снова',
       };
-      setLocError(msgs[err.code] || 'Ошибка GPS: ' + err.message);
+      setLocError(msgs[err.code] || tl('Ошибка GPS: ','שגיאת GPS: ','GPS error: ') + err.message);
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
@@ -1572,13 +1751,14 @@ function reqLoc() {
 
 async function geoSuccess(pos) {
   const { latitude: lat, longitude: lon, accuracy } = pos.coords;
-  setGeoStatus('📡 GPS: ±' + Math.round(accuracy) + ' м · Получаем название города...');
+  setGeoStatus('📡 GPS: ±' + Math.round(accuracy) + tl(' м · Получаем название города...', ' מ׳ · מאתרים שם עיר...', ' m · Getting city name...'));
 
   try {
-    // Get RU and HE names in parallel, plus elevation
-    const [ruResult, heResult, alt] = await Promise.all([
+    // Get RU, HE and EN names in parallel, plus elevation
+    const [ruResult, heResult, enResult, alt] = await Promise.all([
       reverseGeocode(lat, lon, 'ru').catch(() => ''),
       reverseGeocode(lat, lon, 'he').catch(() => ''),
+      reverseGeocode(lat, lon, 'en').catch(() => ''),
       getElevation(lat, lon),
     ]);
 
@@ -1586,22 +1766,23 @@ async function geoSuccess(pos) {
       lat, lon, alt,
       nameRu: ruResult || 'Неизвестно',
       nameHe: heResult || ruResult || 'לא ידוע',
+      nameEn: enResult || ruResult || 'Unknown',
       source: 'geo',
     };
     setGeoStatus('');
     showGeoModal();
   } catch(e) {
-    setLocError('Не удалось определить местоположение: ' + e.message);
+    setLocError(tl('Не удалось определить местоположение: ', 'לא ניתן לקבוע מיקום: ', 'Could not determine location: ') + e.message);
   }
 }
 
 function showGeoModal() {
   if (!_pendingLoc) return;
-  const name = LANG === 'he' ? (_pendingLoc.nameHe || _pendingLoc.nameRu) : _pendingLoc.nameRu;
-  document.getElementById('modal-loc-name').textContent = name || 'Неизвестно';
+  const name = locName(_pendingLoc);
+  document.getElementById('modal-loc-name').textContent = name || tl('Неизвестно','לא ידוע','Unknown');
   document.getElementById('modal-loc-sub').innerHTML =
     `📍 ${_pendingLoc.lat.toFixed(4)}, ${_pendingLoc.lon.toFixed(4)}` +
-    (_pendingLoc.alt != null ? `<br>⛰️ ${_pendingLoc.alt} м н.у.м.` : '');
+    (_pendingLoc.alt != null ? `<br>⛰️ ${_pendingLoc.alt} ${tl('м н.у.м.','מ׳ מ.פ.י.','m a.s.l.')}` : '');
   document.getElementById('geoModal').classList.add('on');
 }
 
@@ -1611,8 +1792,8 @@ function confirmGeo() {
   save();
   document.getElementById('geoModal').classList.remove('on');
 
-  const name = LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu;
-  const altStr = S.location.alt != null ? ` · ${S.location.alt} м н.у.м.` : '';
+  const name = locName(S.location);
+  const altStr = S.location.alt != null ? ` · ${S.location.alt} ${tl('м н.у.м.', 'מ׳ מ.פ.י.', 'm a.s.l.')}` : '';
   setGeoStatus('✅ ' + name + altStr);
 
   const btn = document.getElementById('loc-btn');
@@ -1648,7 +1829,7 @@ function setLocError(msg) {
   if (ls) {
     ls.className = 'abanner ab-warning mb3';
     ls.innerHTML = `<span class="ab-icon">⚠️</span><div class="ab">` +
-      `<strong>Не удалось определить автоматически</strong>` +
+      `<strong>${tl('Не удалось определить автоматически','לא ניתן לזהות אוטומטית','Could not detect automatically')}</strong>` +
       `<p>${msg}</p></div>`;
   }
 }
@@ -1669,7 +1850,7 @@ function updateHeaderCity() {
   const cityEl = document.getElementById('hdr-city');
   if (!cityEl) return;
   const name = S.location?.nameRu
-    ? (LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu)
+    ? (locName(S.location))
     : null;
   if (name) {
     cityEl.innerHTML = `📍 <span style="color:var(--accent)">${name}</span>`;
@@ -1704,7 +1885,7 @@ function goTab(tab) {
   if (tab === 'entry') { smartTrigger(); tickTime(); }
   if (tab === 'diary') {
     document.getElementById('diary-date').textContent = new Date().toLocaleDateString(
-      LANG === 'he' ? 'he-IL' : 'ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }
+      locale(), { weekday: 'long', day: 'numeric', month: 'long' }
     );
   }
 }
@@ -1788,7 +1969,7 @@ function renderWeather() {
   }
   const cityBadge = document.getElementById('home-city-badge');
   if (cityBadge && S.location) {
-    const name = LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu;
+    const name = locName(S.location);
     const alt = S.location.alt ? ` · ${S.location.alt} м` : '';
     cityBadge.innerHTML = name ? `📍 <span style="color:var(--accent)">${name}</span>${alt}` : '';
   }
@@ -1801,7 +1982,7 @@ function renderWeather() {
     wm.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">
       <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°' : '—'}</div><div class="wc-lbl">Темп.</div></div>
       <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
-      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">мм рт.ст.</div></div>
+      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">${tl('мм рт.ст.','מ"מ כ\'','mmHg')}</div></div>
       <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
     </div>`;
   } else if (wm) wm.innerHTML = `<div class="xs dim">${T('l-loading')}</div>`;
@@ -1835,20 +2016,20 @@ function openWeatherDetail() {
   const w = S.weather;
   const rv = cardioRisk(w);
   document.getElementById('wdet-body').innerHTML = w ? `
-    ${S.location?.nameRu ? `<div style="font-size:.8rem;font-weight:600;color:var(--accent);margin-bottom:10px">${LANG === 'he' ? (S.location.nameHe || S.location.nameRu) : S.location.nameRu}${S.location.alt ? ' · ' + S.location.alt + ' м' : ''}</div>` : ''}
+        ${(S.location?.nameRu || S.location?.nameEn) ? `<div style="font-size:.8rem;font-weight:600;color:var(--accent);margin-bottom:10px">${locName(S.location)}${S.location.alt ? ' · ' + S.location.alt + tl(' м','מ׳',' m') : ''}</div>` : ''}
     <div class="wg mb3">
-      <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°C' : '—'}</div><div class="wc-lbl">Темп.</div></div>
-      <div class="wc"><div class="wc-icon">💧</div><div class="wc-val">${w.hum ? w.hum + '%' : '—'}</div><div class="wc-lbl">Влажн.</div></div>
-      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">мм рт.ст.</div></div>
+      <div class="wc"><div class="wc-icon">🌡️</div><div class="wc-val">${w.temp != null ? Math.round(w.temp) + '°C' : '—'}</div><div class="wc-lbl">${tl('Темп.','טמפ׳','Temp.')}</div></div>
+      <div class="wc"><div class="wc-icon">💧</div><div class="wc-val">${w.hum ? w.hum + '%' : '—'}</div><div class="wc-lbl">${tl('Влажн.','לחות','Humid.')}</div></div>
+      <div class="wc"><div class="wc-icon">⬆️</div><div class="wc-val">${hpaToMmhg(w.pres) ?? '—'}</div><div class="wc-lbl">${tl('мм рт.ст.','מ"מ כ\'','mmHg')}</div></div>
       <div class="wc"><div class="wc-icon">🌫️</div><div class="wc-val">${w.pm25 ? Math.round(w.pm25) : '—'}</div><div class="wc-lbl">PM2.5</div></div>
       <div class="wc"><div class="wc-icon">🏜️</div><div class="wc-val">${w.pm10 ? Math.round(w.pm10) : '—'}</div><div class="wc-lbl">PM10</div></div>
       <div class="wc"><div class="wc-icon">⚡</div><div class="wc-val">${w.kp != null ? w.kp.toFixed(1) : '—'}</div><div class="wc-lbl">Kp</div></div>
     </div>
-    <div class="rrow"><span class="rk">Перепад давления (12ч)</span><span class="rv">${w.dpres ? (w.dpres > 0 ? '+' : '') + Math.round(w.dpres * 0.75006 * 10) / 10 + ' мм рт.ст.' : '—'}</span></div>
-    <div class="rrow"><span class="rk">Хамсин-флаг</span><span class="rv">${w.hamsin ? '🌪️ Да' : '—'}</span></div>
+    <div class="rrow"><span class="rk">${tl('Перепад давл. (12ч)','שינוי לחץ (12ש׳)','Pressure Δ (12h)')}</span><span class="rv">${w.dpres ? (w.dpres > 0 ? '+' : '') + Math.round(w.dpres * 0.75006 * 10) / 10 + tl(' мм рт.ст.','מ"מ כ\'',' mmHg') : '—'}</span></div>
+    <div class="rrow"><span class="rk">${tl('Хамсин','חמסין','Heat wave')}</span><span class="rv">${w.hamsin ? tl('🌪️ Да','🌪️ כן','🌪️ Yes') : '—'}</span></div>
     <div class="rrow"><span class="rk">cardioRiskIndex</span><span class="rv mono">${rv != null ? rv + '%' : '—'}</span></div>
     <div class="xs dim mt2">Open-Meteo · NOAA SWPC · ${w.ts ? new Date(w.ts).toLocaleTimeString() : '—'}</div>
-  ` : `<div class="empty"><div class="empty-icon">🌍</div><p>Нет данных погоды</p></div>`;
+  ` : `<div class="empty"><div class="empty-icon">🌍</div><p>${tl('Нет данных погоды','אין נתוני מזג אוויר','No weather data')}</p></div>`;
   openMo('wmo');
 }
 
@@ -1872,7 +2053,7 @@ function renderHome() {
 
   const last = rd[0];
   document.getElementById('last-time').textContent = new Date(last.ts).toLocaleString(
-    LANG === 'he' ? 'he-IL' : 'ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+    locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
   );
   const st = bpStat(last.sys, last.dia);
   document.getElementById('last-sys').textContent = last.sys;
@@ -1896,7 +2077,7 @@ function renderHome() {
     document.getElementById('spo2-badge').textContent = sv >= 95 ? '✅ ' + T('spo2-ok') : sv >= 93 ? '⚠️' : sv >= 90 ? '🟠' : '🔴 ' + T('spo2-cr');
     document.getElementById('spo2-val').style.color = sv >= 95 ? 'var(--green)' : sv >= 93 ? 'var(--orange)' : 'var(--red)';
     document.getElementById('spo2-time').textContent = new Date(spo2rec.ts).toLocaleTimeString(
-      LANG === 'he' ? 'he-IL' : 'ru-RU', { hour: '2-digit', minute: '2-digit' }
+      locale(), { hour: '2-digit', minute: '2-digit' }
     );
   }
 
@@ -1939,7 +2120,7 @@ function renderHome() {
   const avg7sys = Math.round(trendSys.reduce((a, b) => a + b, 0) / trendSys.length);
   const trendDia = rd.slice(0, Math.min(rd.length, 7)).map(r => r.dia);
   const avg7dia = Math.round(trendDia.reduce((a, b) => a + b, 0) / trendDia.length);
-  document.getElementById('trend-stats').textContent = `Ср. ${avg7sys}/${avg7dia}`;
+  document.getElementById('trend-stats').textContent = `${tl('Ср.','ממוצ.','Avg.')} ${avg7sys}/${avg7dia}`;
 
   renderWeather();
 }
@@ -1959,7 +2140,7 @@ function recHTML(r, prev) {
   const st = bpStat(r.sys, r.dia);
   const cls = st.cls.replace('sp-', '');
   const time = new Date(r.ts).toLocaleString(
-    LANG === 'he' ? 'he-IL' : 'ru-RU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+    locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
   );
   const trig = r.triggers?.length ? r.triggers.map(k => T('t-' + k) || k).join(', ') : '—';
 
@@ -1983,18 +2164,18 @@ function recHTML(r, prev) {
     const dPm  = d(r.w?.pm25, prev.w?.pm25);
     const mins = Math.floor((r.ts - prev.ts) / 60000);
     const timeDiff = mins < 60
-      ? `${mins} мин`
+      ? `${mins} ${tl('мин','דק','min')}`
       : mins < 1440
-        ? `${Math.floor(mins/60)} ч ${mins%60 ? (mins%60)+' мин' : ''}`
-        : `${Math.floor(mins/1440)} д ${Math.floor((mins%1440)/60) ? Math.floor((mins%1440)/60)+' ч' : ''}`;
+        ? `${Math.floor(mins/60)} ${tl('ч','ש׳','h')} ${mins%60 ? (mins%60)+' '+tl('мин','דק','min') : ''}`
+        : `${Math.floor(mins/1440)} ${tl('д','י','d')} ${Math.floor((mins%1440)/60) ? Math.floor((mins%1440)/60)+' '+tl('ч','ש׳','h') : ''}`;
 
     const parts = [
-      dSys != null && dDia != null ? `<span class="rd" style="color:var(--muted)">АД</span>${fmt(dSys,'')} / ${fmt(dDia,'')} <span class="rd-eq">мм</span>` : null,
-      dHr != null ? `<span class="rd" style="color:var(--muted)">ЧСС</span>${fmt(dHr,' уд')}` : null,
-      dTemp != null ? `<span class="rd" style="color:var(--muted)">Темп.</span>${fmt(dTemp,'°', true)}` : null,
-      dPres != null ? `<span class="rd" style="color:var(--muted)">Давл.</span>${fmt(dPres,' мм')}` : null,
+      dSys != null && dDia != null ? `<span class="rd" style="color:var(--muted)">${tl('АД','לח"ד','BP')}</span>${fmt(dSys,'')} / ${fmt(dDia,'')} <span class="rd-eq">мм</span>` : null,
+      dHr != null ? `<span class="rd" style="color:var(--muted)">${tl('ЧСС','דופק','HR')}</span>${fmt(dHr,tl(' уд',' פ',''))}` : null,
+      dTemp != null ? `<span class="rd" style="color:var(--muted)">${tl('Темп.','טמפ׳','Temp.')}</span>${fmt(dTemp,'°', true)}` : null,
+      dPres != null ? `<span class="rd" style="color:var(--muted)">${tl('Давл.','לחץ','Pres.')}</span>${fmt(dPres,tl(' мм','מ"מ',' mmHg'))}` : null,
       dPm != null ? `<span class="rd" style="color:var(--muted)">PM2.5</span>${fmt(dPm,'')}` : null,
-      `<span class="rd rd-eq">⏱ ${timeDiff} назад</span>`,
+      `<span class="rd rd-eq">⏱ ${timeDiff} ${tl('назад','לפני','ago')}</span>`,
     ].filter(Boolean);
 
     deltaHTML = `<div class="rec-delta">${parts.join('')}</div>`;
@@ -2013,11 +2194,11 @@ function recHTML(r, prev) {
     ${r.w ? `<div class="rec-delta" style="border-top:${deltaHTML ? '0' : '1px solid var(--border)'};padding-top:${deltaHTML ? '0' : '8px'};margin-top:${deltaHTML ? '0' : '8px'}">
       <span class="rd rd-eq">🌡️ ${r.w.temp != null ? Math.round(r.w.temp)+'°C' : '—'}</span>
       <span class="rd rd-eq">💧 ${r.w.hum != null ? r.w.hum+'%' : '—'}</span>
-      <span class="rd rd-eq">⬆️ ${hpaToMmhg(r.w.pres) ?? '—'} мм</span>
+      <span class="rd rd-eq">⬆️ ${hpaToMmhg(r.w.pres) ?? '—'} ${tl('мм','מ"מ','mmHg')}</span>
       ${r.w.pm25 != null ? `<span class="rd rd-eq">🌫️ PM2.5 ${Math.round(r.w.pm25)}</span>` : ''}
       ${r.w.kp != null ? `<span class="rd rd-eq">⚡ Kp ${r.w.kp.toFixed(1)}</span>` : ''}
-      ${r.w.hamsin ? `<span class="rd rd-up">🌪️ Хамсин</span>` : ''}
-      ${r.w.historical ? `<span class="rd rd-eq" style="font-size:.58rem">📦 архив</span>` : ''}
+      ${r.w.hamsin ? `<span class="rd rd-up">🌪️ ${tl('Хамсин','חמסין','Heat wave')}</span>` : ''}
+      ${r.w.historical ? `<span class="rd rd-eq" style="font-size:.58rem">📦 ${tl('архив','ארכיון','archive')}</span>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -2039,10 +2220,10 @@ function drawTrend() {
   trendC = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: rd.map(r => new Date(r.ts).toLocaleDateString(LANG === 'he' ? 'he-IL' : 'ru-RU', { day: 'numeric', month: 'short' })),
+      labels: rd.map(r => new Date(r.ts).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })),
       datasets: [
-        { label: 'САД', data: rd.map(r => r.sys), borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 3, pointBackgroundColor: '#a05868' },
-        { label: 'ДАД', data: rd.map(r => r.dia), borderColor: '#7a8fa6', backgroundColor: 'rgba(122,143,166,.07)', tension: .4, pointRadius: 3, pointBackgroundColor: '#7a8fa6' },
+        { label: tl('САД','סיסטולי','SBP'), data: rd.map(r => r.sys), borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 3, pointBackgroundColor: '#a05868' },
+        { label: tl('ДАД','דיאסטולי','DBP'), data: rd.map(r => r.dia), borderColor: '#7a8fa6', backgroundColor: 'rgba(122,143,166,.07)', tension: .4, pointRadius: 3, pointBackgroundColor: '#7a8fa6' },
       ]
     },
     options: {
@@ -2072,7 +2253,7 @@ function drawBPChart() {
   // Aggregate by date
   const byDate = {};
   rd.forEach(r => {
-    const key = new Date(r.ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    const key = new Date(r.ts).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
     if (!byDate[key]) byDate[key] = { sys: [], dia: [], pp: [], temp: [], pres: [] };
     byDate[key].sys.push(r.sys);
     byDate[key].dia.push(r.dia);
@@ -2098,8 +2279,8 @@ function drawBPChart() {
   bpChart = new Chart(canvas, {
     type: 'line',
     data: { labels, datasets: [
-      { label: 'САД', data: sysData, borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 2, borderWidth: 2 },
-      { label: 'ДАД', data: diaData, borderColor: '#7a8fa6', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2 },
+      { label: tl('САД','סיסטולי','SBP'), data: sysData, borderColor: '#a05868', backgroundColor: 'rgba(160,88,104,.1)', tension: .4, fill: true, pointRadius: 2, borderWidth: 2 },
+      { label: tl('ДАД','דיאסטולי','DBP'), data: diaData, borderColor: '#7a8fa6', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2 },
       { label: 'PP',  data: ppData,  borderColor: '#5a8a6a', backgroundColor: 'transparent', tension: .4, pointRadius: 1, borderWidth: 1.5, borderDash: [4,4] },
     ]},
     options: {
@@ -2108,7 +2289,7 @@ function drawBPChart() {
       scales: {
         x: { ...xCfg, ticks: { ...xCfg.ticks, display: !hasWeather } },
         y: { grid: { color: 'rgba(58,48,40,.06)' }, ticks: { color: '#8a7e74', font: { size: 9 } }, suggestedMin: 50, suggestedMax: 190,
-             title: { display: true, text: 'мм рт.ст.', color: '#8a7e74', font: { size: 8 } } }
+             title: { display: true, text: tl('мм рт.ст.','מ"מ כ\'','mmHg'), color: '#8a7e74', font: { size: 8 } } }
       }
     }
   });
@@ -2116,8 +2297,8 @@ function drawBPChart() {
   // Weather chart (only if data exists)
   if (hasWeather && wcanvas) {
     const wDatasets = [];
-    if (tempData.some(v => v != null)) wDatasets.push({ label: 'Темп.°C', data: tempData, borderColor: '#c07030', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2, yAxisID: 'yt' });
-    if (presData.some(v => v != null)) wDatasets.push({ label: 'Давл.мм', data: presData, borderColor: '#7a6a9a', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2, yAxisID: 'yp' });
+    if (tempData.some(v => v != null)) wDatasets.push({ label: tl('Темп.°C','טמפ׳°C','Temp.°C'), data: tempData, borderColor: '#c07030', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2, yAxisID: 'yt' });
+    if (presData.some(v => v != null)) wDatasets.push({ label: tl('Давл.мм','לחץ מ"מ','Pres.mmHg'), data: presData, borderColor: '#7a6a9a', backgroundColor: 'transparent', tension: .4, pointRadius: 2, borderWidth: 2, yAxisID: 'yp' });
     weatherChart = new Chart(wcanvas, {
       type: 'line',
       data: { labels, datasets: wDatasets },
@@ -2153,7 +2334,7 @@ function togSpO2() {
 
 function tickTime() {
   const el = document.getElementById('entry-time');
-  if (el) el.textContent = new Date().toLocaleTimeString(LANG === 'he' ? 'he-IL' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
+  if (el) el.textContent = new Date().toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function smartTrigger() {
@@ -2538,7 +2719,7 @@ function setRepFmt(f) {
 
 function genReport() {
   const repDate = document.getElementById('rep-date');
-  if (repDate) repDate.textContent = new Date().toLocaleDateString(LANG === 'he' ? 'he-IL' : 'ru-RU');
+  if (repDate) repDate.textContent = new Date().toLocaleDateString(locale());
   const rd = S.readings;
   if (!rd.length) return;
   const days = new Set(rd.map(r => new Date(r.ts).toDateString())).size;
@@ -2625,7 +2806,9 @@ function confirmClear() {
 
 // ── BOOT ───────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  LANG = detectLang();
   load();
+  applyLang();
   if (S.profile) {
     document.getElementById('onb').style.display = 'none';
     showMain();
@@ -2656,6 +2839,12 @@ window.addEventListener('DOMContentLoaded', () => {
         <p style="margin-bottom:10px">הנתונים המוצגים באפליקציה הם <strong style="color:var(--text)">למטרות מידע בלבד</strong> ואינם יכולים להחליף ייעוץ רפואי, בדיקה קלינית או המלצות של רופא מוסמך.</p>
         <p style="margin-bottom:10px">בכל הרעה במצב הבריאותי, שינוי חריף בערכים או תסמינים מדאיגים — <strong style="color:var(--high)">פנה מיד לרופא או התקשר לאמבולנס (101)</strong>.</p>
         <p style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">בהמשך השימוש באפליקציה, אתה מאשר כי קראת, הבנת וקיבלת את תנאי הצהרה זו.</p>
+      </div>
+      <div id="disc-en">
+        <p style="margin-bottom:10px">This app is a <strong style="color:var(--text)">personal self-monitoring tool</strong> and is not a medical device. It is not certified and is not intended for diagnosis or treatment.</p>
+        <p style="margin-bottom:10px">The data displayed in the app is <strong style="color:var(--text)">for informational purposes only</strong> and cannot replace consultation, examination, or recommendations from a physician.</p>
+        <p style="margin-bottom:10px">If you experience any deterioration in your condition, sudden changes in readings, or alarming symptoms — <strong style="color:var(--high)">contact a doctor immediately or call your local emergency number</strong>.</p>
+        <p style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">By continuing to use the app, you acknowledge that you understand and accept the terms of this disclaimer.</p>
       </div>
     </div>
     <button class="btn btn-p mt3" onclick="acceptDisclaimer()" style="width:100%;font-size:.8rem" id="disc-btn">✓ Понимаю и принимаю · הבנתי ומקבל</button>
