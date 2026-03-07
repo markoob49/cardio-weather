@@ -901,8 +901,8 @@
         <div class="c-title mb1" id="l-rep-title">Отчёт для врача</div>
         <div class="xs dim mb3"><span id="l-rep-sub">Создан:</span> <span id="rep-date">—</span></div>
         <div class="flex g2 mb3">
-          <button class="btn btn-p btn-sm" id="btn-esh" onclick="setRepFmt('esh')" style="width:auto">ESH (кардиолог)</button>
-          <button class="btn btn-s btn-sm" id="btn-gp" onclick="setRepFmt('gp')" style="width:auto">Семейный врач</button>
+          <button class="btn btn-p btn-sm" id="btn-esh" onclick="setRepFmt('esh')" style="width:auto"><span id="l-rep-esh-btn">ESH (кардиолог)</span></button>
+          <button class="btn btn-s btn-sm" id="btn-gp" onclick="setRepFmt('gp')" style="width:auto"><span id="l-rep-gp-btn">Семейный врач</span></button>
         </div>
         <div id="rep-body">
           <div class="empty"><div class="empty-icon">📋</div><p class="sm" id="l-rep-empty">Нужно минимум 7 дней измерений</p></div>
@@ -1057,6 +1057,24 @@ const I18N = {
     'l-all-rec':'Все записи','l-clear':'Очистить','l-no-rec':'Нет записей',
     'l-rep-title':'Отчёт для врача','l-rep-sub':'Создан:',
     'l-rep-empty':'Нужно минимум 7 дней измерений','l-copy':'Скопировать','l-share':'Поделиться',
+    'rep-esh-btn':'ESH (кардиолог)','rep-gp-btn':'Семейный врач',
+    'rep-esh-title':'ESH/ESC Format · Home BP Monitoring',
+    'rep-s-profile':'Профиль пациента','rep-s-hbpm':'Показатели HBPM',
+    'rep-s-weather':'Погодные ассоциации','rep-s-anxious':'Тревожные измерения',
+    'rep-s-bp':'Отчёт по давлению',
+    'rep-period':'Период','rep-diag':'Диагноз / группа','rep-target':'Целевое АД','rep-meds':'Препараты',
+    'rep-avg7':'Ср. АД (7 дней)','rep-avgall':'Ср. АД (весь период)',
+    'rep-pp':'Ср. пульсовое давление','rep-surge':'Утренний подъём',
+    'rep-pct-ok':'% измерений в целевом диапазоне (<135/85)',
+    'rep-pct-cr':'% измерений ≥180/120','rep-highpp':'Измерений с PP≥60',
+    'rep-no-corr':'Недостаточно данных (нужно ≥30 измерений с геолокацией)',
+    'rep-anxious-lbl':'Измерений «на всякий случай»',
+    'rep-obs-period':'Период наблюдения','rep-avg-week':'Среднее давление за неделю',
+    'rep-in-range':'В норме (менее 135/85)','rep-surge-hi':'повышен',
+    'rep-pp-high':'Пульсовое давление','rep-pp-high-val':'мм рт.ст. — повышено',
+    'rep-footer':'КардиоПогода','rep-days':'дней','rep-readings':'измерений',
+    'rep-copied':'Скопировано','rep-copy-manual':'Скопируйте текст вручную',
+    'disc-ver':'КардиоПогода · Только для личного использования',
     'e-title':'Очень высокое давление','e-q':'Есть ли сейчас симптомы?',
     'sx-hd':'Сильная головная боль','sx-ch':'Боль в груди','sx-dy':'Одышка',
     'sx-vi':'Нарушение зрения','sx-sp':'Нарушение речи / слабость руки','sx-cn':'Спутанность сознания',
@@ -1131,6 +1149,24 @@ const I18N = {
     'l-all-rec':'כל הרשומות','l-clear':'מחק','l-no-rec':'אין רשומות',
     'l-rep-title':'דוח לרופא','l-rep-sub':'נוצר:',
     'l-rep-empty':'נדרשים לפחות 7 ימי מדידות','l-copy':'העתק','l-share':'שתף',
+    'rep-esh-btn':'ESH (קרדיולוג)','rep-gp-btn':'רופא משפחה',
+    'rep-esh-title':'ESH/ESC Format · Home BP Monitoring',
+    'rep-s-profile':'פרופיל מטופל','rep-s-hbpm':'מדדי HBPM',
+    'rep-s-weather':'קשרים מטאורולוגיים','rep-s-anxious':'מדידות חרדה',
+    'rep-s-bp':'דוח לחץ דם',
+    'rep-period':'תקופה','rep-diag':'אבחנה / קבוצה','rep-target':'יעד ל״ד','rep-meds':'תרופות',
+    'rep-avg7':'ממוצע ל״ד (7 ימים)','rep-avgall':'ממוצע ל״ד (כל התקופה)',
+    'rep-pp':'לחץ דופק ממוצע','rep-surge':'עלייה בוקרית',
+    'rep-pct-ok':'% מדידות בטווח יעד (<135/85)',
+    'rep-pct-cr':'% מדידות ≥180/120','rep-highpp':'מדידות עם PP≥60',
+    'rep-no-corr':'אין מספיק נתונים (נדרשות ≥30 מדידות עם מיקום)',
+    'rep-anxious-lbl':'מדידות "ליתר ביטחון"',
+    'rep-obs-period':'תקופת מעקב','rep-avg-week':'ממוצע ל״ד שבועי',
+    'rep-in-range':'תקין (פחות מ-135/85)','rep-surge-hi':'גבוהה',
+    'rep-pp-high':'לחץ דופק','rep-pp-high-val':'מ״מ כספית — מוגבר',
+    'rep-footer':'קרדיו-מזג אוויר','rep-days':'ימים','rep-readings':'מדידות',
+    'rep-copied':'הועתק','rep-copy-manual':'העתק את הטקסט ידנית',
+    'disc-ver':'קרדיו-מזג אוויר · לשימוש אישי בלבד',
     'e-title':'לחץ דם גבוה מאוד','e-q':'האם יש כרגע תסמינים?',
     'sx-hd':'כאב ראש חמור','sx-ch':'כאב בחזה','sx-dy':'קוצר נשימה',
     'sx-vi':'הפרעות ראייה','sx-sp':'הפרעת דיבור / חולשת יד','sx-cn':'בלבול',
@@ -1166,6 +1202,11 @@ function applyLang() {
     const el = document.getElementById(k);
     if (el) el.innerHTML = I18N[LANG][k];
   });
+  // Report buttons (spans inside buttons)
+  const eshSpan = document.getElementById('l-rep-esh-btn');
+  const gpSpan  = document.getElementById('l-rep-gp-btn');
+  if (eshSpan) eshSpan.textContent = T('rep-esh-btn');
+  if (gpSpan)  gpSpan.textContent  = T('rep-gp-btn');
   document.getElementById('lang-toggle').textContent = LANG === 'ru' ? 'HE' : 'RU';
   const htitle = document.getElementById('hdr-title');
   if (htitle) {
@@ -1212,11 +1253,23 @@ function sanitize(str) {
 function showDisclaimer() {
   const mo = document.getElementById('disclaimer-mo');
   mo.classList.remove('hidden');
-  // Show Hebrew block if lang is he
-  if (LANG === 'he') {
+  const firstRun = !S.profile;
+  if (firstRun) {
+    // Both languages visible — defaults already set in HTML
+    document.getElementById('disc-ru').style.display = 'block';
+    document.getElementById('disc-he').style.display = 'block';
+  } else if (LANG === 'he') {
+    document.getElementById('disc-ru').style.display = 'none';
     document.getElementById('disc-he').style.display = 'block';
     document.getElementById('disc-title').textContent = 'הצהרת אחריות רפואית';
     document.getElementById('disc-btn').textContent = '✓ הבנתי ומקבל';
+    document.getElementById('disc-ver').textContent = T('disc-ver');
+  } else {
+    document.getElementById('disc-ru').style.display = 'block';
+    document.getElementById('disc-he').style.display = 'none';
+    document.getElementById('disc-title').textContent = 'Медицинский дисклеймер';
+    document.getElementById('disc-btn').textContent = '✓ Понимаю и принимаю';
+    document.getElementById('disc-ver').textContent = T('disc-ver');
   }
 }
 
@@ -2510,51 +2563,51 @@ function genReport() {
   if (repFmt === 'esh') {
     html = `
     <div class="rsection">
-      <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">ESH/ESC Format · Home BP Monitoring</div><div class="s-line"></div></div>
-      <div class="rrow"><span class="rk">Период</span><span class="rv">${days} дней (n=${rd.length})</span></div>
-      <div class="rrow"><span class="rk">Диагноз / группа</span><span class="rv">${(p?.diagnoses || []).map(sanitize).join(', ') || '—'}</span></div>
-      <div class="rrow"><span class="rk">Целевое АД</span><span class="rv">${p?.tSys || '—'}/${p?.tDia || '—'} mmHg</span></div>
-      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).map(sanitize).join(', ') || '—'}</span></div>
+      <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">${T('rep-esh-title')}</div><div class="s-line"></div></div>
+      <div class="rrow"><span class="rk">${T('rep-period')}</span><span class="rv">${days} ${T('rep-days')} (n=${rd.length})</span></div>
+      <div class="rrow"><span class="rk">${T('rep-diag')}</span><span class="rv">${(p?.diagnoses || []).map(sanitize).join(', ') || '—'}</span></div>
+      <div class="rrow"><span class="rk">${T('rep-target')}</span><span class="rv">${p?.tSys || '—'}/${p?.tDia || '—'} mmHg</span></div>
+      <div class="rrow"><span class="rk">${T('rep-meds')}</span><span class="rv">${(p?.meds || []).map(sanitize).join(', ') || '—'}</span></div>
     </div>
     <div class="rsection">
-      <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Показатели HBPM</div><div class="s-line"></div></div>
-      <div class="rrow"><span class="rk">Ср. АД (7 дней)</span><span class="rv">${aSys7}/${aDia7} mmHg</span></div>
-      <div class="rrow"><span class="rk">Ср. АД (весь период)</span><span class="rv">${aSys30}/${aDia30} mmHg</span></div>
-      <div class="rrow"><span class="rk">Ср. пульсовое давление</span><span class="rv">${aPP7} mmHg ${aPP7 >= 60 ? '⚠️ ≥60' : ''}</span></div>
-      <div class="rrow"><span class="rk">Утренний подъём</span><span class="rv">${surge != null ? (surge > 0 ? '+' : '') + surge + ' mmHg' + (surge >= 20 ? ' ⚠️' : '') : '—'}</span></div>
-      <div class="rrow"><span class="rk">% измерений в целевом диапазоне (&lt;135/85)</span><span class="rv">${pctOk}%</span></div>
-      <div class="rrow"><span class="rk">% измерений ≥180/120</span><span class="rv">${pct180}%</span></div>
-      <div class="rrow"><span class="rk">Измерений с PP≥60</span><span class="rv">${highPP} (${Math.round(highPP / rd.length * 100)}%)</span></div>
+      <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">${T('rep-s-hbpm')}</div><div class="s-line"></div></div>
+      <div class="rrow"><span class="rk">${T('rep-avg7')}</span><span class="rv">${aSys7}/${aDia7} mmHg</span></div>
+      <div class="rrow"><span class="rk">${T('rep-avgall')}</span><span class="rv">${aSys30}/${aDia30} mmHg</span></div>
+      <div class="rrow"><span class="rk">${T('rep-pp')}</span><span class="rv">${aPP7} mmHg ${aPP7 >= 60 ? '⚠️ ≥60' : ''}</span></div>
+      <div class="rrow"><span class="rk">${T('rep-surge')}</span><span class="rv">${surge != null ? (surge > 0 ? '+' : '') + surge + ' mmHg' + (surge >= 20 ? ' ⚠️' : '') : '—'}</span></div>
+      <div class="rrow"><span class="rk">${T('rep-pct-ok')}</span><span class="rv">${pctOk}%</span></div>
+      <div class="rrow"><span class="rk">${T('rep-pct-cr')}</span><span class="rv">${pct180}%</span></div>
+      <div class="rrow"><span class="rk">${T('rep-highpp')}</span><span class="rv">${highPP} (${Math.round(highPP / rd.length * 100)}%)</span></div>
     </div>
     <div class="rsection">
-      <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Погодные ассоциации</div><div class="s-line"></div></div>
-      ${S.corr ? Object.entries(S.corr).map(([k, v]) => `<div class="rrow"><span class="rk">${T('corr-' + k)}</span><span class="rv">ρ=${v.toFixed(2)}</span></div>`).join('') : '<div class="rrow"><span class="rk dim">Недостаточно данных (нужно ≥30 измерений с геолокацией)</span></div>'}
+      <div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">${T('rep-s-weather')}</div><div class="s-line"></div></div>
+      ${S.corr ? Object.entries(S.corr).map(([k, v]) => `<div class="rrow"><span class="rk">${T('corr-' + k)}</span><span class="rv">ρ=${v.toFixed(2)}</span></div>`).join('') : `<div class="rrow"><span class="rk dim">${T('rep-no-corr')}</span></div>`}
     </div>
-    ${anxious ? `<div class="rsection"><div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">Тревожные измерения</div><div class="s-line"></div></div><div class="rrow"><span class="rk">Измерений "на всякий случай"</span><span class="rv">${anxious}</span></div></div>` : ''}
-    <div class="xs dim mt2">КардиоПогода · ${new Date().toLocaleDateString()}</div>`;
+    ${anxious ? `<div class="rsection"><div class="s-hdr" style="margin:8px 0 8px"><div class="s-title">${T('rep-s-anxious')}</div><div class="s-line"></div></div><div class="rrow"><span class="rk">${T('rep-anxious-lbl')}</span><span class="rv">${anxious}</span></div></div>` : ''}
+    <div class="xs dim mt2">${T('rep-footer')} · ${new Date().toLocaleDateString()}</div>`;
   } else {
     html = `
     <div class="rsection">
-      <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">Отчёт по давлению</div><div class="s-line"></div></div>
-      <div class="rrow"><span class="rk">Период наблюдения</span><span class="rv">${days} дней, ${rd.length} измерений</span></div>
-      <div class="rrow"><span class="rk">Среднее давление за неделю</span><span class="rv">${aSys7}/${aDia7}</span></div>
-      <div class="rrow"><span class="rk">В норме (менее 135/85)</span><span class="rv">${pctOk}%</span></div>
-      <div class="rrow"><span class="rk">Утренний подъём</span><span class="rv">${surge != null ? surge + ' мм рт.ст.' : '—'} ${surge >= 20 ? '⚠️ повышен' : ''}</span></div>
-      ${aPP7 >= 60 ? `<div class="rrow"><span class="rk">⚠️ Пульсовое давление</span><span class="rv">${aPP7} мм рт.ст. — повышено</span></div>` : ''}
-      <div class="rrow"><span class="rk">Препараты</span><span class="rv">${(p?.meds || []).map(sanitize).join(', ') || '—'}</span></div>
+      <div class="s-hdr" style="margin-bottom:10px"><div class="s-title">${T('rep-s-bp')}</div><div class="s-line"></div></div>
+      <div class="rrow"><span class="rk">${T('rep-obs-period')}</span><span class="rv">${days} ${T('rep-days')}, ${rd.length} ${T('rep-readings')}</span></div>
+      <div class="rrow"><span class="rk">${T('rep-avg-week')}</span><span class="rv">${aSys7}/${aDia7}</span></div>
+      <div class="rrow"><span class="rk">${T('rep-in-range')}</span><span class="rv">${pctOk}%</span></div>
+      <div class="rrow"><span class="rk">${T('rep-surge')}</span><span class="rv">${surge != null ? surge + ' мм рт.ст.' : '—'} ${surge >= 20 ? '⚠️ ' + T('rep-surge-hi') : ''}</span></div>
+      ${aPP7 >= 60 ? `<div class="rrow"><span class="rk">⚠️ ${T('rep-pp-high')}</span><span class="rv">${aPP7} ${T('rep-pp-high-val')}</span></div>` : ''}
+      <div class="rrow"><span class="rk">${T('rep-meds')}</span><span class="rv">${(p?.meds || []).map(sanitize).join(', ') || '—'}</span></div>
     </div>
-    <div class="xs dim mt2">КардиоПогода · ${new Date().toLocaleDateString()}</div>`;
+    <div class="xs dim mt2">${T('rep-footer')} · ${new Date().toLocaleDateString()}</div>`;
   }
   document.getElementById('rep-body').innerHTML = html;
 }
 
 function copyRep() {
   const text = document.getElementById('rep-body').innerText;
-  navigator.clipboard?.writeText(text).then(() => alert('Скопировано')).catch(() => alert('Скопируйте текст вручную'));
+  navigator.clipboard?.writeText(text).then(() => alert(T('rep-copied'))).catch(() => alert(T('rep-copy-manual')));
 }
 function shareRep() {
   const text = document.getElementById('rep-body').innerText;
-  if (navigator.share) navigator.share({ title: 'КардиоПогода — отчёт', text });
+  if (navigator.share) navigator.share({ title: T('rep-footer'), text });
   else copyRep();
 }
 
@@ -2590,20 +2643,23 @@ window.addEventListener('DOMContentLoaded', () => {
 <div id="disclaimer-mo" class="hidden">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);width:100%;max-width:440px;padding:24px 20px;box-shadow:0 8px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <div style="font-size:1.5rem;text-align:center;margin-bottom:10px">⚕️</div>
-    <div style="font-size:.85rem;font-weight:600;color:var(--text);text-align:center;margin-bottom:16px" id="disc-title">Медицинский дисклеймер</div>
+    <div style="font-size:.85rem;font-weight:600;color:var(--text);text-align:center;margin-bottom:16px" id="disc-title">Медицинский дисклеймер · הצהרת אחריות רפואית</div>
     <div style="font-size:.72rem;color:var(--muted);line-height:1.7" id="disc-body">
-      <p style="margin-bottom:10px">Это приложение является <strong style="color:var(--text)">персональным инструментом самомониторинга</strong> и не является медицинским устройством, не сертифицировано и не предназначено для постановки диагноза или лечения.</p>
-      <p style="margin-bottom:10px">Данные, отображаемые в приложении, носят <strong style="color:var(--text)">исключительно информационный характер</strong> и не могут заменить консультацию, обследование или рекомендации врача.</p>
-      <p style="margin-bottom:10px">При любом ухудшении самочувствия, резком изменении показателей или тревожных симптомах — <strong style="color:var(--high)">немедленно обратитесь к врачу или вызовите скорую помощь (101)</strong>.</p>
-      <p style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">Продолжая использование приложения, вы подтверждаете, что понимаете и принимаете условия данного дисклеймера.</p>
-      <div id="disc-he" style="display:none;direction:rtl;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
-        <p style="margin-bottom:8px">אפליקציה זו היא <strong style="color:var(--text)">כלי מעקב אישי</strong> ואינה מכשיר רפואי מאושר ואינה מיועדת לאבחון או טיפול.</p>
-        <p style="margin-bottom:8px">הנתונים המוצגים הם <strong style="color:var(--text)">למטרות מידע בלבד</strong> ואינם מחליפים ייעוץ רפואי.</p>
-        <p>במקרה של הרעה במצב הבריאותי — <strong style="color:var(--high)">פנה לרופא או התקשר לאמבולנס (101)</strong>.</p>
+      <div id="disc-ru">
+        <p style="margin-bottom:10px">Это приложение является <strong style="color:var(--text)">персональным инструментом самомониторинга</strong> и не является медицинским устройством, не сертифицировано и не предназначено для постановки диагноза или лечения.</p>
+        <p style="margin-bottom:10px">Данные, отображаемые в приложении, носят <strong style="color:var(--text)">исключительно информационный характер</strong> и не могут заменить консультацию, обследование или рекомендации врача.</p>
+        <p style="margin-bottom:10px">При любом ухудшении самочувствия, резком изменении показателей или тревожных симптомах — <strong style="color:var(--high)">немедленно обратитесь к врачу или вызовите скорую помощь (101)</strong>.</p>
+        <p style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">Продолжая использование приложения, вы подтверждаете, что понимаете и принимаете условия данного дисклеймера.</p>
+      </div>
+      <div id="disc-he" style="display:none;direction:rtl">
+        <p style="margin-bottom:10px">אפליקציה זו היא <strong style="color:var(--text)">כלי מעקב אישי</strong> ואינה מכשיר רפואי מוסמך, אינה עוברת הסמכה רגולטורית ואינה מיועדת לאבחון מחלות או לקביעת טיפול רפואי.</p>
+        <p style="margin-bottom:10px">הנתונים המוצגים באפליקציה הם <strong style="color:var(--text)">למטרות מידע בלבד</strong> ואינם יכולים להחליף ייעוץ רפואי, בדיקה קלינית או המלצות של רופא מוסמך.</p>
+        <p style="margin-bottom:10px">בכל הרעה במצב הבריאותי, שינוי חריף בערכים או תסמינים מדאיגים — <strong style="color:var(--high)">פנה מיד לרופא או התקשר לאמבולנס (101)</strong>.</p>
+        <p style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">בהמשך השימוש באפליקציה, אתה מאשר כי קראת, הבנת וקיבלת את תנאי הצהרה זו.</p>
       </div>
     </div>
-    <button class="btn btn-p mt3" onclick="acceptDisclaimer()" style="width:100%;font-size:.8rem" id="disc-btn">✓ Понимаю и принимаю</button>
-    <div style="font-size:.6rem;color:var(--dim);text-align:center;margin-top:8px" id="disc-ver">КардиоПогода · Только для личного использования</div>
+    <button class="btn btn-p mt3" onclick="acceptDisclaimer()" style="width:100%;font-size:.8rem" id="disc-btn">✓ Понимаю и принимаю · הבנתי ומקבל</button>
+    <div style="font-size:.6rem;color:var(--dim);text-align:center;margin-top:8px" id="disc-ver">КардиоПогода · Только для личного использования · קרדיו-מזג אוויר · לשימוש אישי בלבד</div>
   </div>
 </div>
 
