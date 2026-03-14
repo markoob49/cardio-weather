@@ -1898,9 +1898,10 @@ async function fetchWeather(force = false) {
   updateHeaderCity();
   const { lat, lon } = S.location;
   try {
-    const [meteo, kp] = await Promise.allSettled([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=pm10,pm2_5&timezone=auto&forecast_days=1`).then(r => r.json()),
+    const [meteo, kp, aq] = await Promise.allSettled([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto&forecast_days=1`).then(r => r.json()),
       fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json').then(r => r.json()),
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5,dust&timezone=auto`).then(r => r.json()),
     ]);
     const w = { ts: now };
     if (meteo.status === 'fulfilled' && meteo.value.current) {
@@ -1908,11 +1909,11 @@ async function fetchWeather(force = false) {
       w.temp = c.temperature_2m; w.hum = c.relative_humidity_2m;
       w.pres = c.surface_pressure; w.wsp = c.wind_speed_10m; w.wdir = c.wind_direction_10m;
     }
-    if (meteo.status === 'fulfilled' && meteo.value.hourly) {
-      const h = meteo.value.hourly;
-      const i = Math.min(new Date().getHours(), (h.pm2_5 || []).length - 1);
-      w.pm25 = h.pm2_5 ? h.pm2_5[i] : null;
-      w.pm10 = h.pm10 ? h.pm10[i] : null;
+    if (aq.status === 'fulfilled' && aq.value.current) {
+      const a = aq.value.current;
+      w.pm25 = a.pm2_5 ?? null;
+      w.pm10 = a.pm10 ?? null;
+      w.dust = a.dust ?? null;
     }
     if (kp.status === 'fulfilled' && Array.isArray(kp.value)) {
       const last = kp.value[kp.value.length - 1];
@@ -1930,7 +1931,7 @@ function hamsinDetect(w) {
   let s = 0;
   if (w.temp >= 35) s++;
   if (w.hum != null && w.hum < 15) s++;
-  if (w.pm10 != null && w.pm10 > 100) s++;
+  if ((w.pm10 != null && w.pm10 > 100) || (w.dust != null && w.dust > 50)) s++;
   if (w.wdir >= 90 && w.wdir <= 210) s++;
   return s >= 3;
 }
@@ -1939,7 +1940,7 @@ function hpaToMmhg(hpa) { return hpa ? Math.round(hpa * 0.75006) : null; }
 
 function cardioRisk(w) {
   if (!w) return null;
-  const t = w.temp ?? 20, pm = w.pm25 ?? 0, pm10 = w.pm10 ?? 0;
+  const t = w.temp ?? 20, pm = w.pm25 ?? 0, pm10 = Math.max(w.pm10 ?? 0, (w.dust ?? 0) * 2);
   const dp = Math.abs(w.dpres ?? 0), kp = w.kp ?? 0;
   const hamsin = w.hamsin ? 1 : pm10 > 75 ? 0.5 : 0;
   let ts;
