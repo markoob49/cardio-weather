@@ -1911,7 +1911,7 @@ async function fetchWeather(force = false) {
   const { lat, lon } = S.location;
   try {
     const [meteo, kp, aq] = await Promise.allSettled([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto&forecast_days=1`).then(r => r.json()),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=surface_pressure&timezone=auto&forecast_days=1&past_days=1`).then(r => r.json()),
       fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json').then(r => r.json()),
       fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5,dust&timezone=auto`).then(r => r.json()),
     ]);
@@ -1931,8 +1931,19 @@ async function fetchWeather(force = false) {
       const last = kp.value[kp.value.length - 1];
       w.kp = last ? parseFloat(last.kp_index) : null;
     }
-    const recent12h = S.readings.filter(r => r.w?.pres && now - r.ts < 43200000);
-    w.dpres = recent12h.length && w.pres ? w.pres - recent12h[0].w.pres : null;
+    if (meteo.status === 'fulfilled' && meteo.value.hourly?.surface_pressure) {
+      const hp = meteo.value.hourly.surface_pressure;
+      // Array covers past_days=1 + forecast_days=1 = 48h, index 0 = 0:00 yesterday
+      const nowH = new Date().getHours();
+      const idxNow = 24 + nowH;           // current hour in the 48h array
+      const idx12  = idxNow - 12;         // 12 hours ago
+      const pNow = hp[idxNow], p12 = hp[idx12];
+      w.dpres = (pNow != null && p12 != null) ? +(pNow - p12).toFixed(1) : null;
+    } else {
+      // Fallback: use readings history
+      const recent12h = S.readings.filter(r => r.w?.pres && now - r.ts < 43200000);
+      w.dpres = recent12h.length && w.pres ? +(w.pres - recent12h[0].w.pres).toFixed(1) : null;
+    }
     w.hamsin = hamsinDetect(w);
     S.weather = w; S.lastWFetch = now; save();
   } catch(e) { console.warn('Weather err', e); }
