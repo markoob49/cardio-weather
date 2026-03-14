@@ -304,23 +304,35 @@
   .sg-val { font-size: 1.3rem; font-weight: 300; font-family: var(--mono); color: var(--text); }
   .sg-lbl { font-size: .58rem; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
 
+  /* ── CORRELATION CARDS ── */
   .ci {
-    display: grid; grid-template-columns: 1fr 120px 50px;
-    align-items: center; gap: 10px; margin-bottom: 10px;
-    padding-bottom: 10px; border-bottom: 1px solid var(--bg);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px;
   }
-  .ci:last-child { border-bottom: none; margin-bottom: 0; }
-  .ci-lbl { font-size: .68rem; color: var(--muted); line-height: 1.3; }
-  .ci-lbl small { display: block; font-size: .58rem; color: var(--dim); margin-top: 2px; }
-  .ci-bar { position: relative; height: 18px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
-  .ci-bar::after { content:''; position:absolute; left:50%; top:0; width:1px; height:100%; background:var(--border); }
+  .ci:last-child { margin-bottom: 0; }
+  .ci-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+  .ci-lbl { font-size: .75rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .ci-lbl small { display: block; font-size: .62rem; color: var(--muted); font-weight: 400; margin-top: 2px; }
+  .ci-badge { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .ci-rho { font-family: var(--mono); font-size: .8rem; font-weight: 700; }
+  .ci-strength {
+    font-size: .6rem; font-weight: 600; padding: 2px 6px;
+    border-radius: 10px; letter-spacing: .03em; white-space: nowrap;
+  }
+  .ci-strength.insig { background: var(--surface2); color: var(--dim); }
+  .ci-strength.weak   { background: rgba(160,168,120,.18); color: #8a9a60; }
+  .ci-strength.mod    { background: rgba(176,120,64,.18); color: var(--orange); }
+  .ci-strength.strong { background: rgba(160,88,104,.18); color: var(--high); }
+  .ci-bar-wrap { position: relative; height: 10px; background: var(--surface2); border-radius: 5px; overflow: visible; }
+  .ci-bar-wrap::after { content:''; position:absolute; left:50%; top:-2px; width:2px; height:14px; background:var(--border); border-radius:1px; }
   .ci-fill {
-    position: absolute; height: 100%; border-radius: 3px; opacity: .85; transition: width .6s ease, left .6s ease;
+    position: absolute; height: 100%; border-radius: 4px; transition: width .7s cubic-bezier(.4,0,.2,1), left .7s cubic-bezier(.4,0,.2,1);
   }
   .ci-fill.pos { left: 50%; background: var(--low); }
   .ci-fill.neg { right: 50%; background: var(--high); }
-  .ci-fill.insig { opacity: .3; filter: saturate(.3); }
-  .ci-num { font-family: var(--mono); font-size: .7rem; font-weight: 600; text-align: right; }
+  .ci-fill.insig { opacity: .25; }
+  .ci-interp { font-size: .62rem; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+  .ci-ev { font-size: .58rem; color: var(--dim); }
 
   .rrow { display:flex; justify-content:space-between; align-items:baseline; padding:8px 0; border-bottom:1px solid var(--surface2); }
   .rrow:last-child { border-bottom:none; }
@@ -2680,33 +2692,75 @@ function computeCorr() {
 function renderCorr() {
   const c = S.corr; if (!c) return;
   const items = [
-    { k: 'tmp', ev: 'ev-g' }, { k: 'pm', ev: 'ev-g' },
-    { k: 'pm10', ev: 'ev-g' }, { k: 'kp', ev: 'ev-b' },
-    { k: 'dp', ev: 'ev-y' }, { k: 'hum', ev: 'ev-y' },
+    { k: 'tmp',  ev: 'ev-g', evTxt: tl('★ доказано','★ מוכח','★ proven') },
+    { k: 'pm',   ev: 'ev-g', evTxt: tl('★ доказано','★ מוכח','★ proven') },
+    { k: 'pm10', ev: 'ev-g', evTxt: tl('★ доказано','★ מוכח','★ proven') },
+    { k: 'dp',   ev: 'ev-y', evTxt: tl('◉ умеренно','◉ מתון','◉ moderate') },
+    { k: 'kp',   ev: 'ev-b', evTxt: tl('○ эксп.','○ ניסיוני','○ exp.') },
+    { k: 'hum',  ev: 'ev-y', evTxt: tl('○ эксп.','○ ניסיוני','○ exp.') },
   ].filter(it => c[it.k] != null);
   if (!items.length) return;
+
   const corrLegend = {
-    tmp:  [T('corr-tmp'),  'Spearman ρ, ESH 2023'],
+    tmp:  [T('corr-tmp'),  tl('Spearman ρ · ESH 2023', 'Spearman ρ · ESH 2023', 'Spearman ρ · ESH 2023')],
     pm:   [T('corr-pm'),   'PM2.5 μg/m³'],
     pm10: [T('corr-pm10'), 'PM10 μg/m³'],
-    kp:   [T('corr-kp'),   'геомагнитная буря'],
-    dp:   [T('corr-dp'),   'перепад за 12ч, hPa'],
-    hum:  ['Влажность ↔ САД', 'относит. влажность %'],
+    kp:   [T('corr-kp'),   tl('Kp 0–9','Kp 0–9','Kp 0–9')],
+    dp:   [T('corr-dp'),   tl('перепад за 12ч, hPa','שינוי 12ש׳, hPa','12h change, hPa')],
+    hum:  [tl('Влажность ↔ САД','לחות ↔ סיסטולי','Humidity ↔ SBP'), tl('относит. влажность %','לחות יחסית %','relative humidity %')],
   };
+
+  // Plain-language interpretation per factor and direction
+  const interpText = (k, rho) => {
+    const abs = Math.abs(rho), pos = rho >= 0;
+    if (abs < 0.15) return tl('Связь не выявлена в ваших данных', 'לא נמצא קשר בנתונים שלך', 'No association found in your data');
+    const dirs = {
+      tmp:  [tl('Холод повышает ваше АД','קור מעלה ל"ד','Cold raises your BP'),
+             tl('Тепло повышает ваше АД','חום מעלה ל"ד','Heat raises your BP')],
+      pm:   [tl('Чистый воздух снижает АД','אוויר נקי מוריד ל"ד','Clean air lowers BP'),
+             tl('Загрязнение воздуха повышает АД','זיהום אוויר מעלה ל"ד','Air pollution raises your BP')],
+      pm10: [tl('Чистый воздух снижает АД','אוויר נקי מוריד ל"ד','Clean air lowers BP'),
+             tl('Пыль и PM10 повышают АД','אבק ו-PM10 מעלים ל"ד','Dust/PM10 raises your BP')],
+      dp:   [tl('Падение давл. снижает ваше АД','ירידת לחץ מורידה ל"ד','Pressure drop lowers your BP'),
+             tl('Скачки давл. повышают ваше АД','תנודות לחץ מעלות ל"ד','Pressure changes raise your BP')],
+      kp:   [tl('Магн. бури снижают ваше АД','סערות מגנטיות מורידות ל"ד','Magnetic storms lower your BP'),
+             tl('Магн. бури повышают ваше АД','סערות מגנטיות מעלות ל"ד','Magnetic storms raise your BP')],
+      hum:  [tl('Сухой воздух повышает АД','אוויר יבש מעלה ל"ד','Dry air raises your BP'),
+             tl('Высокая влажность повышает АД','לחות גבוהה מעלה ל"ד','High humidity raises your BP')],
+    };
+    return (dirs[k] || ['—','—'])[pos ? 1 : 0];
+  };
+
+  const strengthLabel = (abs) => {
+    if (abs < 0.15) return ['insig', tl('не выявлено','לא נמצא','none')];
+    if (abs < 0.30) return ['weak',  tl('слабая','חלש','weak')];
+    if (abs < 0.50) return ['mod',   tl('умеренная','בינוני','moderate')];
+    return               ['strong', tl('сильная','חזק','strong')];
+  };
+
+  const n = S.readings.filter(r => r.w).length;
   document.getElementById('corr-list').innerHTML = items.map(it => {
     const rho = c[it.k]; const abs = Math.abs(rho); const insig = abs < 0.15;
     const pct = Math.round(abs * 50);
     const isPos = rho >= 0;
     const fillCls = (insig ? 'insig ' : '') + (isPos ? 'pos' : 'neg');
-    const numColor = insig ? 'var(--dim)' : isPos ? 'var(--low)' : 'var(--high)';
+    const rhoColor = insig ? 'var(--dim)' : isPos ? 'var(--low)' : 'var(--high)';
     const [lbl, sub] = corrLegend[it.k] || [it.k, ''];
+    const [strCls, strTxt] = strengthLabel(abs);
+    const interp = interpText(it.k, rho);
     return `<div class="ci">
-      <div class="ci-lbl">${lbl}<small>${sub} <span class="ev ${it.ev}">${it.ev === 'ev-g' ? '★' : '○'}</span></small></div>
-      <div class="ci-bar"><div class="ci-fill ${fillCls}" style="width:${pct}%"></div></div>
-      <div class="ci-num" style="color:${numColor}">${rho >= 0 ? '+' : ''}${rho.toFixed(2)}</div>
+      <div class="ci-head">
+        <div class="ci-lbl">${lbl}<small>${sub}</small></div>
+        <div class="ci-badge">
+          <span class="ci-rho" style="color:${rhoColor}">${rho >= 0 ? '+' : ''}${rho.toFixed(2)}</span>
+          <span class="ci-strength ${strCls}">${strTxt}</span>
+        </div>
+      </div>
+      <div class="ci-bar-wrap"><div class="ci-fill ${fillCls}" style="width:${pct}%"></div></div>
+      <div class="ci-interp">${interp} <span class="ci-ev">${it.evTxt} · n=${n}</span></div>
     </div>`;
   }).join('');
-  document.getElementById('corr-status').textContent = `n=${S.readings.filter(r => r.w).length}`;
+  document.getElementById('corr-status').textContent = `n=${n}`;
 }
 
 // ── REPORT ─────────────────────────────────────────────
